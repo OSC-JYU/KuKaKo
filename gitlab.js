@@ -6,26 +6,7 @@ const GITLAB_URL = 'https://gitlab.kopla.jyu.fi/api/v4'
 const TOKEN = process.env.GITLAB_TOKEN
 
 const PERSONS = [
-	{	id: "ari.hayrinen@jyu.fi",
-		username: "arihayri",
-		emails:["ari.hayrinen@gmail.com", "arihayri@jyu.fi", "ari.hayrinen@jyu.fi", "arihayri@osc2203-01.lib.jyu.fi"]
-	},
-	{	id: "veli-matti.hakkinen@jyu.fi",
-		username: "veanha",
-		emails:["veli-matti.hakkinen@jyu.fi", "veanha@jyu.fi"]
-	},
-	{	id: "jussi.t.pajari@jyu.fi",
-		username: "jupajari",
-		emails:["jussi.t.pajari@jyu.fi", "jupajari@jyu.fi", "jupajari@osc2106-01.lib.jyu.fi", "jussi.pajari@gmail.com"]
-	},
-	{	id: "hannamari.h.heiniluoma@jyu.fi",
-		username: "veanha",
-		emails:["hannamari.h.heiniluoma@jyu.fi", "hahelle@jyu.fi","hannamari.heiniluoma@gmail.com"]
-	},
-	{	id: "toni.m.tourunen@jyu.fi",
-		username: "tomatour",
-		emails:["toni.m.tourunen@jyu.fi", "tomatour@jyu.fi"]
-	},
+
 ]
 
 module.exports = class Gitlab {
