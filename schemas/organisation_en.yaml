@@ -1,0 +1,117 @@
+# Basic organisation schema with english labels
+
+
+nodes:
+  - Person:
+      label: Person
+      id: text
+      firstname: text
+  - Form:
+      label: Web Form
+  - EmailList:
+      label: Emaillist
+  - Language:
+      label: Language
+  - Site:
+      label: Site
+      URL: ''
+  - Service:
+      label: System
+      URL: ''
+  - TicketQue:
+      label: TicketQue
+  - Team:
+      label: Team
+  - WorkingGroup:
+      label: Working Group
+  - QueryMap:
+      image: ''
+      scale: ''
+      label: Map
+  - Project:
+      label: Project
+  - TV_sarja:
+      _public: true
+      label: TV-serie
+  - Device:
+      label: Device
+  - Room:
+      label: Room
+  - Document:
+      label: Document
+      URL: ''
+  - Course:
+      label: Course
+  - Event:
+      start: ''
+      end: ''
+      label: Event
+      URL: ''
+  - Process:
+      label: Process
+  - Activity:
+      label: Activity
+
+
+
+edges:
+  - Person:IS_MEMBER_OF_TEAM:Team:
+      label: member of
+      label_rev: members
+  - Person:FORM_MAINTAINER:Form:
+      label: maintainer of
+      label_rev: maintainers
+  - Person:FOLLOWS:EmailList:
+      label: follows
+      label_rev: followers
+  - Person:KNOWS:Language:
+      label: can speak/write
+      label_rev: speakers/writers
+  - Person:CONTENT_MANAGER_OF:Site:
+      label: content maintainer of
+      label_rev: content maintainers
+  - Person:TECHNICAL_MANAGER_OF:Site:
+      label: technical maintainer
+      label_rev: technical maintainers
+  - Person:MAINTAINER_OF:Service:
+      label: maintaner of
+      label_rev: maintainers
+  - Person:USER_OF:Service:
+      label: user of
+      label_rev: users
+  - Person:BELONGS_TO_HELPQUE:HelpDeskQue:
+      label: member of
+      label_rev: members
+  - Person:IS_MEMBER_OF_GROUP:WorkingGroup:
+      label: member of
+      label_rev: members
+  - Person:HAS_LOCATION:QueryMap:
+      label: location on map
+      label_rev: persons on map
+  - Person:IS_PARTICIPANT_OF_PROJECT:Project:
+      label: participant of
+      label_rev: participants
+  - Person:IS_COORDINATOR_OF_PROJECT:Project:
+      label: coordinator of
+      label_rev: coordinators
+  - Person:MAKES_ME_LAUGH:TV_sarja:
+      label: makes me laugh
+      label_rev: laughers
+  - Person:USER_OF_DEVICE:Device:
+      label: user of
+      label_rev: users
+  - Room:HAS_MANUAL:Document:
+      label: AV-guide
+      label_rev: guide for room
+  - Course:IS_ON_ROOM:Room:
+      label: course room
+      label_rev: courses
+  - Person:TEACH:Course:
+      label: teacher of
+      label_rev: teachers
+  - Person:MAINTAINER_OF_DOC:Document:
+      label: maintainer of
+      label_rev: maintainers
+  - Person:DEVELOPER_OF:Application:
+      label: developer of
+      label_rev: developers

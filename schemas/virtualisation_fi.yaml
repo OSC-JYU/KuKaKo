@@ -1,0 +1,80 @@
+# Schema for Docker and Gitlab import with english labels
+
+nodes:
+  - DockerRegistry:
+      label: DockerRegistry
+  - Container:
+      label: Container
+  - DockerImage:
+      label: DockerImage
+  - Volume:
+      label: Volume
+  - Server:
+      label: Server
+  - API:
+      label: API
+  - Network:
+      label: Network
+  - Application:
+      label: sovellus
+      repository: ''
+  - Database:
+      label: tietokanta
+  - DatabaseServer:
+      label: tietokantapalvelin
+  - Server:
+      label: palvelin
+  - ProgrammingLanguage:
+      label: ohjelmointikieli
+  - Repository:
+      label: Repository
+
+edges:
+  - Form:IS_ON:Server:
+      label: on palvelimella
+      label_rev: lomakkeet
+  - Form:SEND_DATA_TO:API:
+      label: läettää datan
+      label_rev: lähettävä lomake
+  - Application:IS_PART_OF:Service:
+      label: tarjoaa
+      label_rev: implementointi
+  - Repository:HAS_MAIN_LANGUAGE:ProgrammingLanguage:
+      label: pääkieli
+      label_rev: repot joissa pääkielenä
+  - Container:IS_BASED_ON:DockerImage:
+      label: luotu imagesta
+      label_rev: kontit
+  - Container:USES_VOLUME:Volume:
+      label: käyttää volumea
+      label_rev: käyttävät kontainerit
+  - Container:USES_NETWORK:Network:
+      label: käyttää verkkoa
+      label_rev: liittyneet kontainerit
+  - Application:RUNS_ON_CONTAINER:Container:
+      label: ajetaan containerissa
+      label_rev: suorittaa
+  - Application:IS_ON:Server:
+      label: on palvelimella
+      label_rev: sovellukset
+  - DockerImage:COMES_FROM_REGISTRY:DockerRegistry:
+      label: tulee reposta
+      label_rev: imaget
+  - DockerImage:BUILT_FROM:Repository:
+      label: buildattu lähteestä
+      label_rev: built images
+  - Application:IS_USER_OF:Database:
+      label: käyttää tietokantaa
+      label_rev: käyttävä sovellus
+  - Application:PROVIDES:API:
+      label: tarjoaa
+      label_rev: implementointi
+  - Application:FROM_SOURCE:Repository:
+      label: lähdekoodista
+      label_rev: sovellus
+  - Application:COMPONENT_OF:Application:
+      label: on osa
+      label_rev: on osa
+  - Database:IS_LOCATED:DatabaseServer:
+      label: on palvelimella
+      label_rev: tietokannat

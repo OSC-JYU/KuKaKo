@@ -1,0 +1,117 @@
+# Basic organisation schema with finnish labels
+
+
+nodes:
+  - Form:
+      label: lomake
+  - Person:
+      label: Henkilö
+      id: text
+  - EmailList:
+      label: sähköpostilista
+  - Language:
+      label: kieli
+  - Site:
+      label: sivusto
+      URL: ''
+  - Service:
+      label: järjestelmä
+      URL: ''
+  - TicketQue:
+      label: HelpJYU
+  - Team:
+      label: tiimi
+  - WorkingGroup:
+      label: työryhmä
+  - QueryMap:
+      image: ''
+      scale: ''
+      label: Kartta
+  - Project:
+      label: projekti
+  - TV_sarja:
+      _public: true
+      label: TV_sarja
+  - Device:
+      label: laite
+  - Room:
+      label: tila
+  - Document:
+      label: dokumentti
+      URL: ''
+  - Course:
+      label: kurssi
+  - Event:
+      start: ''
+      end: ''
+      label: tapahtuma
+      URL: ''
+  - Process:
+      label: prosessi
+  - Activity:
+      label: toiminto
+
+
+
+edges:
+  - Person:IS_MEMBER_OF:Team:
+      label: on jäsen
+      label_rev: jäsenet
+  - Person:FORM_MAINTAINER:Form:
+      label: ylläpitää
+      label_rev: ylläpitäjä
+  - Person:FOLLOWS:EmailList:
+      label: seuraa
+      label_rev: on listalla
+  - Person:KNOWS:Language:
+      label: osaan
+      label_rev: osaajat
+  - Person:CONTENT_MANAGER_OF:Site:
+      label: ylläpitää aineistoa
+      label_rev: aineistoylläpitäjä
+  - Person:TECHNICAL_MANAGER_OF:Site:
+      label: tekninen ylläpitäjä
+      label_rev: tekninen ylläpitäjä
+  - Person:MAINTAINER_OF:Service:
+      label: ylläpitää
+      label_rev: ylläpitäjä
+  - Person:USER_OF:Service:
+      label: käyttää
+      label_rev: käyttäjät
+  - Person:BELONGS_TO_HELPQUE:HelpDeskQue:
+      label: on jäsen
+      label_rev: jäsenet
+  - Person:IS_MEMBER_OF_GROUP:WorkingGroup:
+      label: kuulun
+      label_rev: jäsenet
+  - Person:HAS_LOCATION:QueryMap:
+      label: sijaitsen
+      label_rev: henkilöt
+
+  - Person:IS_MEMBER_OF_PROJECT:Project:
+      label: osallistun
+      label_rev: osallistujat
+  - Person:IS_COORDINATOR_OF_PROJECT:Project:
+      label: koordinoin
+      label_rev: koordinoijat
+  - Person:MAKES_ME_LAUGH:TV_sarja:
+      label: saa nauramaan
+      label_rev: naurattaa
+  - Person:USER_OF_DEVICE:Device:
+      label: käytän
+      label_rev: käyttäjät
+  - Room:HAS_MANUAL:Document:
+      label: AV-ohje
+      label_rev: ohje tilaan
+  - Course:IS_ON_ROOM:Room:
+      label: opetustila
+      label_rev: kurssit
+  - Person:TEACH:Course:
+      label: opetan
+      label_rev: opettajat
+  - Person:MAINTAINER_OF_DOC:Document:
+      label: ylläpidän
+      label_rev: ylläpitäjät
+  - Person:DEVELOPER_OF:Application:
+      label: kehittää
+      label_rev: kehittäjä

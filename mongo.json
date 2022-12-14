@@ -1,0 +1,7 @@
+{
+	"language": "mongo", 
+	"command": 
+	{ 
+		"collection": "Person",
+		"query": { "label": "Artturimatias" }}
+}

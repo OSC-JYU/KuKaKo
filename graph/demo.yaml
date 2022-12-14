@@ -1,0 +1,26 @@
+# A very simple demo graph
+# Please note that nodes have IDs and those IDS are used for linking
+
+nodes:
+  - Person:
+      label: Kuka Kumma
+      id: kuka@ku.ka
+  - Person:
+      label: Mikä Ihme
+      id: mika@jy.ka
+  - Team:
+      label: Team, just another one
+      description: Odd team of excellent personalities!
+      id: team1
+
+  - Query:
+      label: All
+      query: MATCH (n) WHERE NOT n:Schema AND NOT n:Menu AND NOT n:Query AND NOT n:UserGroup RETURN n
+      id: q1
+
+edges:
+  - Person:kuka@ku.ka>IS_MEMBER_OF_TEAM>Team:team1:
+      info: I mostly just take easy.
+  - Person:mika@jy.ka>IS_MEMBER_OF_TEAM>Team:team1:
+      info: I do all the work.
+  - Query:q1>IN_MENU>Menu:me:

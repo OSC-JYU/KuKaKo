@@ -1,0 +1,33 @@
+{
+  "name": "kukakukin",
+  "version": "1.0.0",
+  "description": "show human-system spaghetti",
+  "main": "index.js",
+  "scripts": {
+    "test": "mocha --timeout 50000 --exit"
+  },
+  "author": "Ari Häyrinen",
+  "license": "ISC",
+  "dependencies": {
+    "@koa/multer": "^3.0.2",
+    "axios": "^0.25.0",
+    "flexsearch": "^0.7.21",
+    "got": "^12.3.1",
+    "js-yaml": "^4.1.0",
+    "json5": "^2.2.1",
+    "koa": "^2.13.4",
+    "koa-body": "^4.2.0",
+    "koa-json": "^2.0.2",
+    "koa-router": "^10.1.1",
+    "koa-static": "^5.0.0",
+    "multer": "^1.4.5-lts.1",
+    "sharp": "^0.31.2",
+    "winston": "^3.5.0",
+    "winston-daily-rotate-file": "^4.6.0"
+  },
+  "devDependencies": {
+    "chai": "^4.3.6",
+    "chai-http": "^4.3.0",
+    "mocha": "^9.2.0"
+  }
+}

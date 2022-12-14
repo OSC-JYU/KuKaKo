@@ -1,0 +1,79 @@
+# Schema for Docker and Gitlab import with english labels
+
+nodes:
+  - DockerRegistry:
+      label: DockerRegistry
+  - Container:
+      label: Container
+  - DockerImage:
+      label: DockerImage
+  - Volume:
+      label: Volume
+  - Server:
+      label: Server
+  - API:
+      label: API
+  - Network:
+      label: Network
+  - Application:
+      label: Application
+  - Database:
+      label: Database
+  - DatabaseServer:
+      label: DatabaseServer
+  - Server:
+      label: Server
+  - ProgrammingLanguage:
+      label: Programming Language
+  - Repository:
+      label: Repository
+
+edges:
+  - Form:IS_ON:Server:
+      label: is located on server
+      label_rev: forms
+  - Form:SEND_DATA_TO:API:
+      label: sends data to
+      label_rev: data senders
+  - Application:IS_PART_OF:Service:
+      label: is part of
+      label_rev: implements
+  - Repository:HAS_MAIN_LANGUAGE:ProgrammingLanguage:
+      label: main language
+      label_rev: repositories with main language
+  - Container:IS_BASED_ON:DockerImage:
+      label: based on
+      label_rev: containers
+  - Container:USES_VOLUME:Volume:
+      label: uses volume
+      label_rev: used by containers
+  - Container:USES_NETWORK:Network:
+      label: uses network
+      label_rev: containers
+  - Application:RUNS_ON_CONTAINER:Container:
+      label: runs on container
+      label_rev: executes
+  - Application:IS_ON:Server:
+      label: on server
+      label_rev: applications
+  - DockerImage:COMES_FROM_REGISTRY:DockerRegistry:
+      label: from repository
+      label_rev: images
+  - DockerImage:BUILT_FROM:Repository:
+      label: build from source
+      label_rev: built images
+  - Application:IS_USER_OF:Database:
+      label: uses database
+      label_rev:
+  - Application:PROVIDES:API:
+      label: provides
+      label_rev: implements
+  - Application:FROM_SOURCE:Repository:
+      label: from source code
+      label_rev: application
+  - Application:COMPONENT_OF:Application:
+      label: is part of
+      label_rev: sub part
+  - Database:IS_LOCATED:DatabaseServer:
+      label: is located
+      label_rev: databases

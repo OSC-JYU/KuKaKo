@@ -1,0 +1,27 @@
+# Base system Schema for KuKaKO.
+# Edit only if you really, really want to (might mess things)!
+
+
+nodes:
+  - Person:
+      label: Person
+      id: text
+  - UserGroup: {}
+  - Menu: {}
+  - Query:
+      query: ''
+  - Tag:
+      layout: fcose
+  - NodeGroup: {}
+
+
+edges:
+  - Menu:VISIBLE_FOR_GROUP:UserGroup:
+      label: visible for user group(s)
+      label_rev: visible menus
+  - Query:IN_MENU:Menu:
+      label: shown in menu
+      label_rev: queries
+  - Tag:PART_OF_MENU:Menu:
+      label: shown in menu
+      label_rev: tags
