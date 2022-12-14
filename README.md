@@ -23,29 +23,20 @@ You should have Git and Docker (or podman) installed.
 
 1. Create network that connects KuKaKo backend to ArcadeDB:
 
-	docker network create arcadedb-net
-
+		docker network create arcadedb-net
+	
 2. Start Arcadedb:
 
-	docker run -d -p 2480:2480 -p 2424:2424 --name arcadedb -e JAVA_OPTS="-Darcadedb.server.rootPassword=node_master" -v arcadedata:/home/arcadedb/databases --network arcadedb-net --network-alias arcadedb arcadedata/arcadedb:22.11.1
+		docker run -d -p 2480:2480 -p 2424:2424 --name arcadedb -e JAVA_OPTS="-Darcadedb.server.rootPassword=node_master" -v arcadedata:/home/arcadedb/databases --network arcadedb-net --network-alias arcadedb arcadedata/arcadedb:22.11.1
 
 3. Install KuKaKo:
 
-	git clone https://gitlab.kopla.jyu.fi/osc/kukako.git
-	cd kukako
-	make build
-	make start
+		git clone https://github.com/OSC-JYU/KuKaKo.git
+		cd kukako
+		make build
+		make start
 
 Now you should have KuKaKo running on http://localhost:8100
-
-### Development
-
-If you have NodeJS installed, you can run KuKaKo directly on NodeJS (for development).
-
-	git clone https://gitlab.kopla.jyu.fi/osc/kukako.git
-	cd kukako
-	npm install
-	MODE=development node index.js
 
 
 ## Quick Start (local mode)
@@ -87,18 +78,6 @@ Try what happend if you import 1000 persons! Go "admin" -> "import graph" -> "pe
 
 Reload and you should see some new menu items in your scene.
 
-### Import schema
-
-Try to import some schema (using httpie):
-
-	http POST :8100/api/schemas/import?filename=organisation_en.yaml
-
-Now check the schema page again (reload if necessary): http://localhost:8100/schema
-
-You should see structure for organisation. There are teams, work groups, IT systems, web sites etc.  
-
-### Styles
-
 
 
 ## User authentication and creation
@@ -138,24 +117,13 @@ User roles define what user can do in the system and user can have only one role
 3. **admin**
 admin can set user roles for other users and user can edit schema.
 
-## Developing with UI (NodeJS install)
 
-1. Start ArcadeDB:
+### Development
 
-	docker run -d -p 2480:2480 -p 2424:2424 --name arcadedb -e JAVA_OPTS="-Darcadedb.server.rootPassword=isbn_kaikille" -v arcadedata:/home/arcadedb/databases --network arcadedb-net --network-alias arcadedb arcadedata/arcadedb:22.10.1
+If you have NodeJS installed, you can run KuKaKo directly on NodeJS (for development).
 
-2. Install KuKaKo backend:
-
-	git clone https://gitlab.kopla.jyu.fi/osc/kukako.git
+	git clone https://github.com/OSC-JYU/KuKaKo.git
 	cd kukako
 	npm install
-	MODE=development node index.js
+	MODE=development ARCADEDB_PASSWORD=node_master node index.js
 
-3. Install KuKaKo frontend (in new terminal):
-
-	https://gitlab.kopla.jyu.fi/osc/kukako-ui.git
-	cd kukako-ui
-	npm install
-	npm run dev
-
-Now you should have KuKaKo running on http://localhost:3000
