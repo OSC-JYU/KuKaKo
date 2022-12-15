@@ -17,17 +17,24 @@ module.exports = class Graph {
 
 	async initDB(docIndex) {
 		console.log('Checking database...')
+		let {setTimeout} = await import('timers/promises')
 		this.docIndex = docIndex
 		var query = 'MATCH (n:Schema) return n'
 		try {
 			var result = await web.cypher(URL, query)
-		} catch(e) {
+		} catch (e) {
 			try {
 				console.log('Database not found, creating...')
 				await web.createDB(URL)
 			} catch (e) {
-				console.log(`Could not init database. \nIs Arcadedb running at ${URL}?`)
-				process.exit(1)
+				console.log(`Could not init database. \nTrying again in 10 secs...`)
+				await setTimeout(10000)
+				try {
+					await web.createDB(URL)
+				} catch (e) {
+					console.log(`Could not init database. \nIs Arcadedb running at ${URL}?`)
+					throw('Could not init database. exiting...')
+				}
 			}
 		}
 		await this.setSystemNodes()

@@ -16,6 +16,7 @@ const styles 		= require('./styles.js');
 const schema 		= require('./schema.js');
 const media 		= require('./media.js');
 
+
 let graph
 let docIndex
 
@@ -29,8 +30,14 @@ let docIndex
 		}
 	})
 	graph = new Graph()
-	await graph.initDB(docIndex)
-	await graph.createIndex()
+	try {
+		await graph.initDB(docIndex)
+		await graph.createIndex()
+	} catch (e) {
+		console.log(e)
+		process.exit(1)
+	}
+
 
 })();
 
