@@ -1,0 +1,38 @@
+
+version: '2'
+
+services:
+  arcadedb:
+    image: arcadedata/arcadedb:22.11.1
+    container_name: arcadedb_comp
+    networks:
+     - arcadedb-net
+    ports:
+      - 2480:2480
+    environment:
+     - JAVA_OPTS=-Darcadedb.server.rootPassword=node_master
+    volumes:
+     - arcadedata:/home/arcadedb/databases
+
+  kukako:
+    build: .
+    depends_on:
+     - arcadedb
+    image: osc-jyu/kukako
+    container_name: kukako_comp
+    networks:
+     - arcadedb-net
+    ports:
+     - "8100:8100"
+    environment:
+     - ARCADEDB_HOST=arcadedb
+     - ARCADEDB_DB=kukako
+     - ARCADEDB_PASSWORD=node_master
+     - MODE=development
+
+networks:
+  arcadedb-net:
+    driver: bridge
+
+volumes:
+  arcadedata:

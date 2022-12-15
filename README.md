@@ -13,33 +13,18 @@ For developers (experimental)
 - Automatic repository graph of repositories based on commits
 - Automatic virtualisation graph from Docker (containers, images and volumes)
 
-## Install
-
-### Docker Install (Linux && Mac)
+## Quick Start (local mode)
 
 This will install KuKaKo in local mode, so that you can test things.
+You should have Git and Docker Compose installed.
 
-You should have Git and Docker (or podman) installed.
+	git clone https://github.com/OSC-JYU/KuKaKo.git
+	cd KuKaKo
+	docker-compose up
 
-1. Create network that connects KuKaKo backend to ArcadeDB:
-
-		docker network create arcadedb-net
-	
-2. Start Arcadedb:
-
-		docker run -d -p 2480:2480 -p 2424:2424 --name arcadedb -e JAVA_OPTS="-Darcadedb.server.rootPassword=node_master" -v arcadedata:/home/arcadedb/databases --network arcadedb-net --network-alias arcadedb arcadedata/arcadedb:22.11.1
-
-3. Install KuKaKo:
-
-		git clone https://github.com/OSC-JYU/KuKaKo.git
-		cd kukako
-		make build
-		make start
 
 Now you should have KuKaKo running on http://localhost:8100
 
-
-## Quick Start (local mode)
 
 BETTER DOCS COMING SOON!
 
@@ -126,4 +111,3 @@ If you have NodeJS installed, you can run KuKaKo directly on NodeJS (for develop
 	cd kukako
 	npm install
 	MODE=development ARCADEDB_PASSWORD=node_master node index.js
-
