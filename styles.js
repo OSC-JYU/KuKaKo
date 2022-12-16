@@ -2,8 +2,6 @@ const path = require('path')
 const fsPromises = require('fs/promises')
 const web = require("./web.js")
 
-const DB_HOST = process.env.ARCADEDB_HOST || 'localhost'
-const URL = `http://${DB_HOST}:2480/api/v1/command/kukako`
 
 let styles = {}
 
@@ -66,7 +64,7 @@ styles.importStyle = async function(filename, mode) {
 
 	if(mode == 'clear') {
 		var query = `MATCH (s:Schema) SET s._style = ''`
-		await web.cypher(URL, query)
+		await web.cypher( query)
 	}
 
 	for(style of styles) {
@@ -77,12 +75,12 @@ styles.importStyle = async function(filename, mode) {
 			style_str = style_str.replace(/\'/g, '##')
 			try {
 				var query = `MATCH (s:Schema {_type:"${selector}"}) SET s._style = '${style_str}'`
-				await web.cypher(URL, query)
+				await web.cypher( query)
 			} catch (e) {
 				console.log(`\nWARNING: invalid style for Schema ${selector}\n`)
 				console.log(style.style)
 				var query = `MATCH (s:Schema {_type:"${selector}"}) SET s._style = '{}'`
-				await web.cypher(URL, query)
+				await web.cypher( query)
 			}
 		}
 	}
@@ -108,7 +106,7 @@ styles.getStyle = async function() {
 	var styles = [...basestyle] // deep copy
 
 	const query = "MATCH (s:Schema) return s._type as type, s._style as style"
-	var response = await web.cypher(URL, query)
+	var response = await web.cypher( query)
 	for(var schema of response.result) {
 		if(schema.style && schema.style !== '  cypher.null') {
 			try {

@@ -50,11 +50,11 @@ module.exports = class Docker {
 
 	async mergeFIX(type, id, label) {
 		const c_query = `MATCH (n:${type}) return count(n) as count`
-		var count = await web.cypher(URL, c_query)
+		var count = await web.cypher(c_query)
 		if(count.result[0].count === 0) {
 			var query = `CREATE (c:${type} {id:"${id}"})
 				set c.label = "${label}"`
-			await web.cypher(URL, query)
+			await web.cypher(query)
 		}
 	}
 
@@ -97,7 +97,7 @@ module.exports = class Docker {
 				c._active = true,
 				c.timestamp = ${stamp}
 				 return c`
-			await web.cypher(URL, query)
+			await web.cypher(query)
 		}
 		await this.cleanByTimestamp('DockerImage', stamp)
 
@@ -109,7 +109,7 @@ module.exports = class Docker {
 					c._active = true,
 					c.timestamp = ${stamp}
 					 return c`
-			await web.cypher(URL, q)
+			await web.cypher(q)
 		}
 		await this.cleanByTimestamp('Volume', stamp)
 
@@ -121,7 +121,7 @@ module.exports = class Docker {
 					c._active = true,
 					c.timestamp = ${stamp}
 					 return c`
-			await web.cypher(URL, q)
+			await web.cypher(q)
 		}
 		await this.cleanByTimestamp('Network', stamp)
 
@@ -134,7 +134,7 @@ module.exports = class Docker {
 					c._active = true,
 					c.timestamp = ${stamp} return c`
 
-			await web.cypher(URL, q)
+			await web.cypher(q)
 			// join networks
 			var nets = []
 			for(var key in container.NetworkSettings.Networks) {
@@ -147,7 +147,7 @@ module.exports = class Docker {
 					id:"${container.Id}"}),
 					(n:Network {id: "${net}"})
 					MERGE (c)-[:USES_NETWORK]->(n)`
-				await web.cypher(URL, join)
+				await web.cypher(join)
 			}
 			// join volumes
 			for(var mount of container.Mounts) {
@@ -158,7 +158,7 @@ module.exports = class Docker {
 						(n:Volume {id: "${mount.Name}"})
 						MERGE (c)-[r:USES_VOLUME]->(n)
 						SET r.attr = "${mount.Destination}"`
-					await web.cypher(URL, join)
+					await web.cypher(join)
 				}
 			}
 

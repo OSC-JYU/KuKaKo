@@ -24,7 +24,7 @@ start:
 	docker run -d --name kukako \
 		-v $(VOLUME):/logs \
 		-p 8100:8100 \
-		-e ARCADEDB_HOST=arcadedb \
+		-e ARCADEDB_HOST=http://localhost \
 		-e ARCADEDB_DB=kukako \
 		-e ARCADEDB_PASSWORD=node_master \
 		-e MODE=development \

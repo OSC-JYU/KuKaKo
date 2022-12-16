@@ -6,9 +6,6 @@ const fsPromises = require('fs/promises')
 
 const web = require("./web.js")
 
-const MAX_STR_LENGTH = 2048
-const DB_HOST = process.env.ARCADEDB_HOST || 'localhost'
-const URL = `http://${DB_HOST}:2480/api/v1/command/kukako`
 
 let schema = {}
 
@@ -18,7 +15,7 @@ schema.getSchema = async function(label) {
 		query = `MATCH (s:Schema {_type:"${label}"}) -[rel]- (t:Schema) RETURN s, rel ,t, COALESCE(t.label, t._type) as label ORDER by rel.display DESC`
 	else
 		query = `MATCH (s:Schema ) -[rel]-(t:Schema) RETURN s, rel, t`
-	var result = await web.cypher(URL, query)
+	var result = await web.cypher(query)
 	var out = []
 	for(var schema of result.result) {
 
@@ -50,12 +47,12 @@ schema.getSchema = async function(label) {
 
 schema.getSchemaTypes = async function() {
 	var query = 'MATCH (schema:Schema) RETURN id(schema) as rid, COALESCE(schema.label, schema._type) as label, schema._type as type, schema ORDER by label'
-	return await web.cypher(URL, query)
+	return await web.cypher( query)
 }
 
 schema.getSchemaAttributes = async function(schema, data_obj) {
 	var query = `MATCH (s:Schema) WHERE s._type = "${schema}" RETURN s`
-	var response = await web.cypher(URL, query)
+	var response = await web.cypher( query)
 	if(response.result && response.result.length) {
 		for(var key in response.result[0]) {
 			if(!(key in data_obj)) data_obj[key] = ''
@@ -70,7 +67,7 @@ schema.exportSchemaYAML = async function(filename) {
 	var vertex_ids = {}
 	var edge_ids = {}
 	var query = 'MATCH (schema:Schema) OPTIONAL MATCH (schema)-[r]-(schema2:Schema) RETURN schema, r, schema2 '
-	var schemas = await web.cypher(URL, query, {serializer: 'graph'})
+	var schemas = await web.cypher( query, {serializer: 'graph'})
 	var output = {nodes: [], edges: []}
 	for(var vertex of schemas.result.vertices) {
 		if(!vertex_ids[vertex.r]) {
@@ -114,7 +111,7 @@ schema.importSchemaYAML = async function(filename, mode) {
 			const filePathSystem = path.resolve('./schemas', filename)
 			const system_schema = await fsPromises.readFile(filePathSystem, 'utf8')
 			var query = 'MATCH (s:Schema) DETACH DELETE s'
-			var result = await web.cypher(URL, query)
+			var result = await web.cypher( query)
 			const system_schema_data = yaml.load(system_schema)
 			await writeSchemaToDB(system_schema_data)
 		}
@@ -147,14 +144,14 @@ async function writeSchemaToDB(schema) {
 			attributes.push(`s._type = "${type}"`)
 			node[type].type = type
 			var insert = `MERGE (s:Schema {_type: "${type}"}) SET ${attributes.join(',')}`
-			var reponse = await web.cypher(URL, insert)
+			var reponse = await web.cypher( insert)
 		}
 
 		for(var edge of schema.edges) {
 			const type = Object.keys(edge)[0]
 			var edge_parts = type.split(':')
 			var link_query = `MATCH (from:Schema {_type: "${edge_parts[0]}"}), (to: Schema {_type:"${edge_parts[2]}"}) MERGE (from)-[r:${edge_parts[1]}]->(to) SET r.label ="${edge[type].label}", r.label_rev = "${edge[type].label_rev}"`
-			var reponse = await web.cypher(URL, link_query)
+			var reponse = await web.cypher( link_query)
 		}
 	} catch (e) {
 		throw(e)

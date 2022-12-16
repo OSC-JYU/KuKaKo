@@ -8,29 +8,31 @@ const schema = require("./schema.js")
 const web = require("./web.js")
 
 const MAX_STR_LENGTH = 2048
-const DB_HOST = process.env.ARCADEDB_HOST || 'localhost'
+const DB_HOST = process.env.ARCADEDB_HOST || 'http://localhost'
 const DB = process.env.ARCADEDB_DB || 'kukako'
-const URL = `http://${DB_HOST}:2480/api/v1/command/${DB}`
+const PORT = process.env.ARCADEDB_PORT || 2480
+const URL = `${DB_HOST}:${PORT}/api/v1/command/${DB}`
 
 // Assigning to exports will not modify module, must use module.exports
 module.exports = class Graph {
 
 	async initDB(docIndex) {
-		console.log('Checking database...')
+		console.log(`ArcadeDB: ${web.getURL()}`)
+		console.log(`Checking database...`)
 		let {setTimeout} = await import('timers/promises')
 		this.docIndex = docIndex
 		var query = 'MATCH (n:Schema) return n'
 		try {
-			var result = await web.cypher(URL, query)
+			var result = await web.cypher(query)
 		} catch (e) {
 			try {
 				console.log('Database not found, creating...')
-				await web.createDB(URL)
+				await web.createDB()
 			} catch (e) {
 				console.log(`Could not init database. \nTrying again in 10 secs...`)
 				await setTimeout(10000)
 				try {
-					await web.createDB(URL)
+					await web.createDB()
 				} catch (e) {
 					console.log(`Could not init database. \nIs Arcadedb running at ${URL}?`)
 					throw('Could not init database. exiting...')
@@ -44,14 +46,14 @@ module.exports = class Graph {
 	async setSystemNodes() {
 		try {
 			// database exist, make sure that some base types are present
-			await web.createVertexType(URL, 'Schema')
-			await web.createVertexType(URL, 'Person')
-			await web.createVertexType(URL, 'UserGroup')
-			await web.createVertexType(URL, 'Menu')
-			await web.createVertexType(URL, 'Query')
-			await web.createVertexType(URL, 'Layout')
-			await web.createVertexType(URL, 'Tag')
-			await web.createVertexType(URL, 'NodeGroup')
+			await web.createVertexType('Schema')
+			await web.createVertexType('Person')
+			await web.createVertexType('UserGroup')
+			await web.createVertexType('Menu')
+			await web.createVertexType('Query')
+			await web.createVertexType('Layout')
+			await web.createVertexType('Tag')
+			await web.createVertexType('NodeGroup')
 			await schema.importSystemSchema()
 			await this.createSystemGraph()
 			// Make sure that base system graph exists
@@ -70,18 +72,18 @@ module.exports = class Graph {
 		try {
 			// Menu "Me"
 			var query = 'MERGE (m:Menu {id:"me"}) SET m.label = "Me", m._active = true RETURN m'
-			var menu = await web.cypher(URL, query, null, 1)
+			var menu = await web.cypher( query, null, 1)
 			// Usergroup "Basic"
 			query = 'MERGE (m:UserGroup {id:"user"}) SET m.label = "User", m._active = true RETURN m'
-			var group = await web.cypher(URL, query, null, 1)
+			var group = await web.cypher( query, null, 1)
 
 			// Make sure that "Me" menu is linked to the "User" group
 			query = `MATCH (m:Menu), (g:UserGroup) WHERE id(m) = "${menu.result[0]['@rid']}" AND id(g) = "${group.result[0]['@rid']}" MERGE (m)-[:VISIBLE_FOR_GROUP]->(g)`
-			await web.cypher(URL, query, null, 1)
+			await web.cypher( query, null, 1)
 
 			// default local user
 			query = `MERGE (p:Person {id:"local.user@localhost"}) SET p._group = "user", p._access = "admin", p._active = true, p.label = "Local You", p.description = "It's really You!" RETURN p`
-			await web.cypher(URL, query, null, 1)
+			await web.cypher( query, null, 1)
 		} catch (e) {
 			console.log(query)
 			throw('System graph creation failed')
@@ -93,7 +95,7 @@ module.exports = class Graph {
 		console.log('Starting to index...')
 		var query = 'MATCH (n) return id(n) as id, n.label as label'
 		try {
-			var result = await web.cypher(URL, query)
+			var result = await web.cypher( query)
 			try {
 				for (var node of result.result) {
 					this.docIndex.add(node)
@@ -114,7 +116,7 @@ module.exports = class Graph {
 	}
 
 	async query(body) {
-		return web.cypher(URL, body.query)
+		return web.cypher( body.query)
 	}
 
 	async create(type, data) {
@@ -142,7 +144,7 @@ module.exports = class Graph {
 
 		var query = `CREATE (n:${type} {${data_str_arr.join(',')}}) return n`
         console.log(query)
-		return web.cypher(URL, query)
+		return web.cypher( query)
 	}
 
 
@@ -162,15 +164,15 @@ module.exports = class Graph {
 		if('id' in node[type]) {
 			var insert = `MERGE (s:${type} {id:"${node[type].id}"}) SET ${attributes.join(',')} RETURN s`
 			try {
-				var response = await web.cypher(URL, insert)
+				var response = await web.cypher( insert)
 				console.log(response)
 				this.docIndex.add({id: response.result[0]['@rid'],label:node.label})
 				return response.data
 
 			} catch (e) {
 				try {
-					await web.createVertexType(URL, type)
-					var response = await web.cypher(URL, insert)
+					await web.createVertexType(type)
+					var response = await web.cypher( insert)
 					console.log(response)
 					this.docIndex.add({id: response.result[0]['@rid'],label:node.label})
 					return response.data
@@ -203,7 +205,7 @@ module.exports = class Graph {
 			relation_type = relation
 		}
 		var query = `MATCH (from), (to) WHERE id(from) = "${from}" AND id(to) = "${to}" CREATE (from)-[:${relation_type} ${attributes}]->(to) RETURN from, to`
-		return web.cypher(URL, query)
+		return web.cypher( query)
 	}
 
 
@@ -211,14 +213,14 @@ module.exports = class Graph {
 		if(!data.from.match(/^#/)) data.from = '#' + data.from
 		if(!data.to.match(/^#/)) data.to = '#' + data.to
 		var query = `MATCH (from)-[r:${data.rel_type}]->(to) WHERE id(from) = "${data.from}" AND id(to) = "${data.to}" DELETE r RETURN from`
-		return web.cypher(URL, query)
+		return web.cypher( query)
 	}
 
 
 	async deleteEdge(rid) {
 		if(!rid.match(/^#/)) rid = '#' + rid
 		var query = `MATCH (from)-[r]->(to) WHERE id(r) = '${rid}' DELETE r`
-		return web.cypher(URL, query)
+		return web.cypher( query)
 	}
 
 
@@ -237,7 +239,7 @@ module.exports = class Graph {
 		} else if(typeof data.value == 'string') {
 					query = query + `SET r.${data.name} = '${data.value.replace(/'/g,"\\'")}'`
 		}
-		return web.cypher(URL, query)
+		return web.cypher( query)
 	}
 
 
@@ -253,14 +255,14 @@ module.exports = class Graph {
 		} else if(typeof data.value == 'string') {
 			query = query + `SET node.${data.key} = '${data.value.replace(/'/g,"\\'")}'`
 		}
-		return web.cypher(URL, query)
+		return web.cypher( query)
 	}
 
 
 	async getNodeAttributes(rid) {
 		if(!rid.match(/^#/)) rid = '#' + rid
 		var query = `MATCH (node) WHERE id(node) = '${rid}' RETURN node`
-		return web.cypher(URL, query)
+		return web.cypher( query)
 	}
 
 
@@ -285,13 +287,13 @@ module.exports = class Graph {
 			me: me
 		}
 
-		return web.cypher(URL, body.query, options)
+		return web.cypher( body.query, options)
 	}
 
 
 	async getSchemaRelations() {
 		var schema_relations = {}
-		var schemas = await web.cypher(URL, 'MATCH (s:Schema)-[r]->(s2:Schema) return type(r) as type, r.label as label, r.label_rev as label_rev, COALESCE(r.label_inactive, r.label) as label_inactive, s._type as from, s2._type as to, r.tags as tags, r.compound as compound')
+		var schemas = await web.cypher( 'MATCH (s:Schema)-[r]->(s2:Schema) return type(r) as type, r.label as label, r.label_rev as label_rev, COALESCE(r.label_inactive, r.label) as label_inactive, s._type as from, s2._type as to, r.tags as tags, r.compound as compound')
 		schemas.result.forEach(x => {
 			schema_relations[x.type] = x
 		})
@@ -303,7 +305,7 @@ module.exports = class Graph {
 		if(search[0]) {
 			var arr = search[0].result.map(x => '"' + x + '"')
 			var query = `MATCH (n) WHERE id(n) in [${arr.join(',')}] AND NOT n:Schema return id(n) as id, n.label as label, labels(n) as type LIMIT 10`
-			return web.cypher(URL, query)
+			return web.cypher( query)
 		} else {
 			return {result:[]}
 		}
@@ -346,13 +348,13 @@ module.exports = class Graph {
 	async checkMe(user) {
 		if(!user) throw('user not defined')
 		var query = `MATCH (me:Person {id:"${user}"}) return id(me) as rid, me._group as group, me._access as access`
-		var result = await web.cypher(URL, query)
+		var result = await web.cypher( query)
 		// add user if not found
 		if(result.result.length == 0) {
 			query = `MERGE (p:Person {id: "${user}"}) SET p.label = "${user}", p._group = 'user', p._active = true`
-			result = await web.cypher(URL, query)
+			result = await web.cypher( query)
 			query = `MATCH (me:Person {id:"${user}"}) return id(me) as rid, me._group as group`
-			result = await web.cypher(URL, query)
+			result = await web.cypher( query)
 			return result.result[0]
 		} else return result.result[0]
 	}
@@ -361,21 +363,21 @@ module.exports = class Graph {
 	async myId(user) {
 		if(!user) throw('user not defined')
 		var query = `MATCH (me:Person {id:"${user}"}) return id(me) as rid, me._group as group, me._access as access`
-		var response = await web.cypher(URL, query)
+		var response = await web.cypher( query)
 		return response.result[0]
 	}
 
 
 	async getGroups() {
 		var query = 'MATCH (x:UserGroup) RETURN x.label as label, x.id as id'
-		var result = await web.cypher(URL, query)
+		var result = await web.cypher( query)
 		return result.result
 	}
 
 
 	async getMaps() {
 		var query = 'MATCH (t:QueryMap) RETURN t order by t.label'
-		var result = await web.cypher(URL, query)
+		var result = await web.cypher( query)
 		return result.result
 	}
 
@@ -383,7 +385,7 @@ module.exports = class Graph {
 	async getMenus(group) {
 		//var query = 'MATCH (m:Menu) return m'
 		var query = `MATCH (m:Menu) -[:VISIBLE_FOR_GROUP]->(n:UserGroup {id:"${group}"}) OPTIONAL MATCH (m)-[]-(q) WHERE q:Query OR q:Tag RETURN COLLECT( q) AS items, m.label as label, m.id as id ORDER BY id`
-		var result = await web.cypher(URL, query)
+		var result = await web.cypher( query)
 		var menus = this.forceArray(result.result, 'items')
 		return menus
 	}
@@ -416,7 +418,7 @@ module.exports = class Graph {
 		if(node_types.length) node_query = ` WHERE ${node_types.join (' OR ')}`
 		var query = `MATCH (p:Person {id:"${user}"})-[r${rel_types.join('|')}]-(n) OPTIONAL MATCH (n)--(n2) ${node_query} return ${data.return}`
 
-		return web.cypher(URL, query, 'graph')
+		return web.cypher( query, 'graph')
 	}
 
 
@@ -425,10 +427,10 @@ module.exports = class Graph {
 	async getListByType(query_params) {
 		var query = `MATCH (n) return n.label as text, id(n) as value ORDER by text`
 		if(query_params.type) query = `MATCH (n:${query_params.type}) return n.label as text, id(n) as value ORDER by text`
-		var all = await web.cypher(URL, query)
+		var all = await web.cypher( query)
 		if(query_params.relation && query_params.target) {
 			query = `MATCH (n:${query_params.type})-[r:${query_params.relation}]-(t) WHERE id(t) = "#${query_params.target}" return COLLECT(id(n)) as ids`
-			var linked = await web.cypher(URL, query)
+			var linked = await web.cypher( query)
 			//console.log(linked.result)
 			//console.log(all.result)
 			var r = all.result.filter(item => !linked.result[0].ids.includes(item.value));
@@ -449,7 +451,7 @@ module.exports = class Graph {
 			const graph_data = yaml.load(data)
 			if(mode == 'clear') {
 				var query = 'MATCH (s) WHERE NOT s:Schema DETACH DELETE s'
-				var result = await web.cypher(URL, query)
+				var result = await web.cypher( query)
 				await this.setSystemNodes()
 				await this.createSystemGraph()
 				await this.writeGraphToDB(graph_data)
@@ -496,7 +498,7 @@ module.exports = class Graph {
 
 				var insert = `CREATE (s:${type}) SET ${attributes.join(',')}`
 				console.log(insert)
-				var reponse = await web.cypher(URL, insert)
+				var reponse = await web.cypher( insert)
 			}
 
 			for(var edge of graph.edges) {
@@ -525,7 +527,7 @@ module.exports = class Graph {
 					}
 
 					var link_query = `MATCH (from:${from_type} {id: "${from_id}"}), (to: ${to_type} {id:"${to_id}"}) MERGE (from)-[r:${splitted[1]}]->(to) ${attr_str}`
-					var response = await web.cypher(URL, link_query)
+					var response = await web.cypher( link_query)
 				} else {
 					throw('Graph edge error: ' + Object.keys(edge)[0])
 				}
@@ -533,7 +535,7 @@ module.exports = class Graph {
 			}
 			// 	var edge_parts = type.split(':')
 			// 	var link_query = `MATCH (from:Schema {_type: "${edge_parts[0]}"}), (to: Schema {_type:"${edge_parts[2]}"}) MERGE (from)-[r:${edge_parts[1]}]->(to) SET r.label ="${edge[type].label}", r.label_rev = "${edge[type].label_rev}"`
-			// 	var reponse = await web.cypher(URL, link_query)
+			// 	var reponse = await web.cypher( link_query)
 			// }
 		} catch (e) {
 			throw(e)
@@ -543,30 +545,30 @@ module.exports = class Graph {
 
 	async mergeFIX(type, schema_type) {
 		const c_query = `MATCH (n:${type}) return count(n) as count`
-		var count = await web.cypher(URL, c_query)
+		var count = await web.cypher( c_query)
 		if(count.result[0].count === 0) {
 			var query = `CREATE (c:${type})
 				set c._type = "${schema_type}"`
-			await web.cypher(URL, query)
+			await web.cypher( query)
 		}
 	}
 
 
 	async getTags() {
 		var query = 'MATCH (t:Tag) RETURN t order by t.label'
-		return await web.cypher(URL, query)
+		return await web.cypher( query)
 	}
 
 
 	async getQueries() {
 		var query = 'MATCH (t:Query)  RETURN t'
-		return await web.cypher(URL, query)
+		return await web.cypher( query)
 	}
 
 
 	async getStyles() {
 		var query = 'MATCH (s:Schema) return COALESCE(s._style,"") as style, s._type as type'
-		return await web.cypher(URL, query)
+		return await web.cypher( query)
 	}
 
 
@@ -591,14 +593,14 @@ module.exports = class Graph {
 		}
 		var as_string = JSON5.stringify(for_cypher)
 		const query = `MERGE (l:Layout {user: "${me.rid}", target: "${body.target}"}) SET l.positions = ${as_string} RETURN l`
-		return await web.cypher(URL, query)
+		return await web.cypher( query)
 	}
 
 
 	async getLayoutByTarget(rid, me) {
 		if(!rid.match(/^#/)) rid = '#' + rid
 		var query = `MATCH (l:Layout) WHERE l.target = "${rid}" AND l.user = "${me.rid}" return l`
-		const result =  await web.cypher(URL, query)
+		const result =  await web.cypher( query)
 		if(result.result.length)
 			return result.result[0]
 		else
@@ -608,7 +610,7 @@ module.exports = class Graph {
 
 	async getStats() {
 		const query = 'MATCH (n) RETURN DISTINCT LABELS(n) as labels, COUNT(n) as count  ORDER by count DESC'
-		const result =  await web.cypher(URL, query)
+		const result =  await web.cypher( query)
 		return result
 	}
 
@@ -617,7 +619,7 @@ module.exports = class Graph {
 		by_groups = 1
 
 		if(!rid.match(/^#/)) rid = '#' + rid
-		var data = await web.cypher(URL, `MATCH (source) WHERE id(source) = "${rid}" OPTIONAL MATCH (source)-[rel]-(target)  return source, rel, target ORDER by target.label`)
+		var data = await web.cypher( `MATCH (source) WHERE id(source) = "${rid}" OPTIONAL MATCH (source)-[rel]-(target)  return source, rel, target ORDER by target.label`)
 		if(data.result.length == 0) return []
 
 

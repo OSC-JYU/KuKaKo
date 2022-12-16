@@ -3,10 +3,20 @@ const axios = require("axios")
 const username = 'root'
 const password = process.env.ARCADEDB_PASSWORD
 
+const MAX_STR_LENGTH = 2048
+const DB_HOST = process.env.ARCADEDB_HOST || 'http://localhost'
+const DB = process.env.ARCADEDB_DB || 'kukako'
+const PORT = process.env.ARCADEDB_PORT || 2480
+const URL = `${DB_HOST}:${PORT}/api/v1/command/${DB}`
+
 let web = {}
 
-web.createDB = async function(url) {
-	url = url.replace('/command/', '/create/')
+web.getURL = function() {
+	return URL
+}
+
+web.createDB = async function() {
+	url = URL.replace('/command/', '/create/')
 	var config = {
 		auth: {
 			username: username,
@@ -16,17 +26,17 @@ web.createDB = async function(url) {
 	return axios.post(url, {}, config)
 }
 
-web.createVertexType = async function(url, type) {
+web.createVertexType = async function(type) {
 	var query = `CREATE vertex type ${type}`
 	try {
-		await this.sql(url, query)
+		await this.sql(query)
 	} catch (e) {
 		//console.log(e.message)
 		//console.log(`${type} exists`)
 	}
 }
 
-web.sql = async function(url, query, options) {
+web.sql = async function(query, options) {
 	var config = {
 		auth: {
 			username: username,
@@ -37,11 +47,11 @@ web.sql = async function(url, query, options) {
 		command:query,
 		language:'sql'
 	}
-	var response = await axios.post(url, query_data, config)
+	var response = await axios.post(URL, query_data, config)
 	return response.data
 }
 
-web.cypher = async function(url, query, options, no_console) {
+web.cypher = async function(query, options, no_console) {
 
 	if(!options) var options = {}
 	if(options.current && !options.current.includes('#')) options.current = '#' + options.current
@@ -60,11 +70,11 @@ web.cypher = async function(url, query, options, no_console) {
 	if(!no_console) console.log(query)
 
 	try {
-		var response = await axios.post(url, query_data, config)
+		var response = await axios.post(URL, query_data, config)
 		if(query && query.toLowerCase().includes('create')) return response.data
 		else if(!options.serializer) return response.data
 		else if(options.serializer == 'graph' && options.format == 'cytoscape') {
-			options.labels = await getSchemaLabels(url, config)
+			options.labels = await getSchemaLabels(config)
 			return convert2CytoScapeJs(response.data, options)
 		} else {
 			return response.data
@@ -74,14 +84,14 @@ web.cypher = async function(url, query, options, no_console) {
 	}
 }
 
-async function getSchemaLabels(url, config) {
+async function getSchemaLabels(config) {
 	const query = "MATCH (s:Schema)  RETURN COALESCE(s.label, s._type)  as label, s._type as type"
 	const query_data = {
 		command:query,
 		language:'cypher'
 	}
 	try {
-		var response = await axios.post(url, query_data, config)
+		var response = await axios.post(URL, query_data, config)
 		var labels = response.data.result.reduce(
 			(obj, item) => Object.assign(obj, { [item.type]: item.label }), {});
 		return labels

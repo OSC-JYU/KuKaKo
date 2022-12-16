@@ -1,7 +1,6 @@
 const axios = require("axios")
 const web = require("./web.js")
-var host = process.env.ARCADEDB_HOST || 'localhost'
-const URL = `http://${host}:2480/api/v1/command/kukako`
+
 const GITLAB_URL = 'https://gitlab.kopla.jyu.fi/api/v4'
 const TOKEN = process.env.GITLAB_TOKEN
 
@@ -82,7 +81,7 @@ module.exports = class Gitlab {
 			c._active = true`
 
 			try {
-				await web.cypher(URL, query)
+				await web.cypher(query)
 			} catch(e) {
 				console.log(query)
 			}
@@ -91,7 +90,7 @@ module.exports = class Gitlab {
 		for(var item of base_images) {
 			var query = `MATCH (base:BaseImage {id:"${item.id}"}), (r:Repository {id:"${item.repository}"}) WHERE (image:DockerImage)-[:BUILT_FROM]->(r) MERGE (image)-[:IS_BASED_ON_BASEIMAGE]->(base)`
 			try {
-				await web.cypher(URL, query)
+				await web.cypher(query)
 			} catch(e) {
 				console.log(query)
 			}
@@ -138,7 +137,7 @@ module.exports = class Gitlab {
 			c._active = true`
 
 			try {
-				await web.cypher(URL, query)
+				await web.cypher(query)
 			} catch(e) {
 				console.log(query)
 			}
@@ -147,7 +146,7 @@ module.exports = class Gitlab {
 		for(const item of main_languages) {
 			var query = `MATCH (language:ProgrammingLanguage), (repo:Repository) WHERE language.id = "${item.lang}" AND repo.id = "${item.repository}" MERGE (language)-[:IS_MAIN_LANGUAGE_OF {description: "${item.percentage}"}]->(repo)`
 			try {
-				await web.cypher(URL, query)
+				await web.cypher(query)
 			} catch (e) {
 				console.log(e)
 			}
@@ -156,7 +155,7 @@ module.exports = class Gitlab {
 		for(const item of side_languages) {
 			var query = `MATCH (language:ProgrammingLanguage), (repo:Repository) WHERE language.id = "${item.lang}" AND repo.id = "${item.repository}" MERGE (language)-[:IS_LANGUAGE_OF {description: "${item.percentage}"}]->(repo)`
 			try {
-				await web.cypher(URL, query)
+				await web.cypher(query)
 			} catch (e) {
 				console.log(e)
 			}
@@ -211,17 +210,17 @@ module.exports = class Gitlab {
 		for(var item of images) {
 			console.log(item)
 			var query = `MATCH (image:DockerImage), (repo:Repository) WHERE image.label = "${item.id}" AND repo.id = "${item.repository}" MERGE (image)-[:BUILT_FROM]->(repo)`
-			await web.cypher(URL, query)
+			await web.cypher(query)
 
 		}
 	}
 
 	async mergeFIX(type, id) {
 		const c_query = `MATCH (n:${type}) return count(n) as count`
-		var count = await web.cypher(URL, c_query)
+		var count = await web.cypher(c_query)
 		if(count.result[0].count === 0) {
 			var query = `CREATE (c:${type} {id:"${id}"})`
-			await web.cypher(URL, query)
+			await web.cypher(query)
 		}
 	}
 
@@ -244,7 +243,7 @@ module.exports = class Gitlab {
 			c._active = true
 			`
 			try {
-				await web.cypher(URL, query)
+				await web.cypher(query)
 			} catch(e) {
 
 				console.log(e)
@@ -273,7 +272,7 @@ module.exports = class Gitlab {
 
 			for(let committer of committers) {
 				var query = `match (r:Repository {id:"${repo.id}"}),(p:Person {id:"${committer}"}) MERGE (p)-[:IS_COMMITTER_OF]->(r) return r,p`
-				await web.cypher(URL, query)
+				await web.cypher(query)
 			}
 		}
 
