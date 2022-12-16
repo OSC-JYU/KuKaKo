@@ -206,6 +206,7 @@ module.exports = class Graph {
 		return web.cypher(URL, query)
 	}
 
+
 	async unconnect(data) {
 		if(!data.from.match(/^#/)) data.from = '#' + data.from
 		if(!data.to.match(/^#/)) data.to = '#' + data.to
@@ -213,50 +214,55 @@ module.exports = class Graph {
 		return web.cypher(URL, query)
 	}
 
+
 	async deleteEdge(rid) {
 		if(!rid.match(/^#/)) rid = '#' + rid
 		var query = `MATCH (from)-[r]->(to) WHERE id(r) = '${rid}' DELETE r`
 		return web.cypher(URL, query)
 	}
 
+
 	async setEdgeAttribute(rid, data) {
 		if(!rid.match(/^#/)) rid = '#' + rid
-		var query = `MATCH (from)-[r]->(to) WHERE id(r) = '${rid}' SET r.${data.name} = '${data.value.replace(/'/g,"\\'")}'`
-		// boolean
-		if(typeof data.value == 'boolean' || typeof data.value == 'number') query = `MATCH (from)-[r]->(to) WHERE id(r) = '${rid}' SET r.${data.name} = ${data.value}`
-		// integer
+		let query = `MATCH (from)-[r]->(to) WHERE id(r) = '${rid}' `
 		if(Array.isArray(data.value)) {
 			if(data.value.length > 0) {
 				data.value = data.value.map(i => `'${i}'`).join(',')
-				query = `MATCH (from)-[r]->(to) WHERE id(r) = '${rid}' SET r.${data.name} = [${data.value}]`
+				query = query + `SET r.${data.name} = [${data.value}]`
 			} else {
-				query = `MATCH (from)-[r]->(to) WHERE id(r) = '${rid}' SET r.${data.name} = []`
+				query = query + `SET r.${data.name} = []`
 			}
+		} else if(typeof data.value == 'boolean' || typeof data.value == 'number') {
+			query = query + `SET r.${data.name} = ${data.value}`
+		} else if(typeof data.value == 'string') {
+					query = query + `SET r.${data.name} = '${data.value.replace(/'/g,"\\'")}'`
 		}
-
-		//if(!data.value) query = `MATCH (from)-[r]->(to) WHERE id(r) = '${rid}' REMOVE r.${data.name}`
 		return web.cypher(URL, query)
 	}
+
 
 	async setNodeAttribute(rid, data) {
 		if(!rid.match(/^#/)) rid = '#' + rid
-		var query = `MATCH (node) WHERE id(node) = '${rid}' SET node.${data.key} = '${data.value.replace(/'/g,"\\'")}'`
-		console.log(query)
-		if(typeof data.value == 'boolean') query = `MATCH (node) WHERE id(node) = '${rid}' SET node.${data.key} = ${data.value}`
+		let query = `MATCH (node) WHERE id(node) = '${rid}' `
 
 		if(Array.isArray(data.value) && data.value.length > 0) {
 			data.value = data.value.map(i => `'${i}'`).join(',')
-			query = `MATCH (node) WHERE id(node) = '${rid}' SET node.${data.key} = [${data.value}]`
+			query = `SET node.${data.key} = [${data.value}]`
+		} else if(typeof data.value == 'boolean') {
+			query = query + `SET node.${data.key} = ${data.value}`
+		} else if(typeof data.value == 'string') {
+			query = query + `SET node.${data.key} = '${data.value.replace(/'/g,"\\'")}'`
 		}
-
 		return web.cypher(URL, query)
 	}
+
 
 	async getNodeAttributes(rid) {
 		if(!rid.match(/^#/)) rid = '#' + rid
 		var query = `MATCH (node) WHERE id(node) = '${rid}' RETURN node`
 		return web.cypher(URL, query)
 	}
+
 
 	async getGraph(body, ctx) {
 
@@ -282,6 +288,7 @@ module.exports = class Graph {
 		return web.cypher(URL, body.query, options)
 	}
 
+
 	async getSchemaRelations() {
 		var schema_relations = {}
 		var schemas = await web.cypher(URL, 'MATCH (s:Schema)-[r]->(s2:Schema) return type(r) as type, r.label as label, r.label_rev as label_rev, COALESCE(r.label_inactive, r.label) as label_inactive, s._type as from, s2._type as to, r.tags as tags, r.compound as compound')
@@ -290,6 +297,7 @@ module.exports = class Graph {
 		})
 		return schema_relations
 	}
+
 
 	async getSearchData(search) {
 		if(search[0]) {
@@ -300,6 +308,7 @@ module.exports = class Graph {
 			return {result:[]}
 		}
 	}
+
 
 	checkRelationData(data) {
 		if(data.from) {
@@ -313,7 +322,6 @@ module.exports = class Graph {
 		}
 		return data
 	}
-
 
 
 	createAttributeCypher(attributes) {
@@ -335,9 +343,6 @@ module.exports = class Graph {
 	}
 
 
-
-
-
 	async checkMe(user) {
 		if(!user) throw('user not defined')
 		var query = `MATCH (me:Person {id:"${user}"}) return id(me) as rid, me._group as group, me._access as access`
@@ -352,6 +357,7 @@ module.exports = class Graph {
 		} else return result.result[0]
 	}
 
+
 	async myId(user) {
 		if(!user) throw('user not defined')
 		var query = `MATCH (me:Person {id:"${user}"}) return id(me) as rid, me._group as group, me._access as access`
@@ -359,17 +365,20 @@ module.exports = class Graph {
 		return response.result[0]
 	}
 
+
 	async getGroups() {
 		var query = 'MATCH (x:UserGroup) RETURN x.label as label, x.id as id'
 		var result = await web.cypher(URL, query)
 		return result.result
 	}
 
+
 	async getMaps() {
 		var query = 'MATCH (t:QueryMap) RETURN t order by t.label'
 		var result = await web.cypher(URL, query)
 		return result.result
 	}
+
 
 	async getMenus(group) {
 		//var query = 'MATCH (m:Menu) return m'
@@ -379,6 +388,7 @@ module.exports = class Graph {
 		return menus
 	}
 
+
 	forceArray(data, property) {
 		for(var row of data) {
 			if(!Array.isArray(row[property])) {
@@ -386,8 +396,8 @@ module.exports = class Graph {
 			}
 		}
 		return data
-
 	}
+
 
 	// data = {rel_types:[], node_types: []}
 	async myGraph(user, data) {
@@ -428,7 +438,6 @@ module.exports = class Graph {
 		} else {
 			return all
 		}
-
 	}
 
 
@@ -472,6 +481,7 @@ module.exports = class Graph {
 			throw(e)
 		}
 	}
+
 
 	async writeGraphToDB(graph) {
 		try {
@@ -531,7 +541,6 @@ module.exports = class Graph {
 	}
 
 
-
 	async mergeFIX(type, schema_type) {
 		const c_query = `MATCH (n:${type}) return count(n) as count`
 		var count = await web.cypher(URL, c_query)
@@ -542,20 +551,24 @@ module.exports = class Graph {
 		}
 	}
 
+
 	async getTags() {
 		var query = 'MATCH (t:Tag) RETURN t order by t.label'
 		return await web.cypher(URL, query)
 	}
+
 
 	async getQueries() {
 		var query = 'MATCH (t:Query)  RETURN t'
 		return await web.cypher(URL, query)
 	}
 
+
 	async getStyles() {
 		var query = 'MATCH (s:Schema) return COALESCE(s._style,"") as style, s._type as type'
 		return await web.cypher(URL, query)
 	}
+
 
 	async getFileList(dir) {
 		if(['graph', 'styles', 'schemas'].includes(dir)) {
@@ -566,6 +579,7 @@ module.exports = class Graph {
 			throw('Illegal path')
 		}
 	}
+
 
 	async setLayout(body, me) {
 		if(!body.target || !body.data) throw('data missing')
@@ -580,6 +594,7 @@ module.exports = class Graph {
 		return await web.cypher(URL, query)
 	}
 
+
 	async getLayoutByTarget(rid, me) {
 		if(!rid.match(/^#/)) rid = '#' + rid
 		var query = `MATCH (l:Layout) WHERE l.target = "${rid}" AND l.user = "${me.rid}" return l`
@@ -588,14 +603,15 @@ module.exports = class Graph {
 			return result.result[0]
 		else
 			return []
-
 	}
+
 
 	async getStats() {
 		const query = 'MATCH (n) RETURN DISTINCT LABELS(n) as labels, COUNT(n) as count  ORDER by count DESC'
 		const result =  await web.cypher(URL, query)
 		return result
 	}
+
 
 	async getDataWithSchema(rid, by_groups) {
 		by_groups = 1
@@ -686,7 +702,5 @@ module.exports = class Graph {
 		} else {
 			return schemas
 		}
-
-
 	}
 }
