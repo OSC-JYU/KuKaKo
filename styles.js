@@ -58,32 +58,40 @@ const basestyle = [
 styles.importStyle = async function(filename, mode) {
 	console.log(`** IMPORTING STYLE ${filename} mode: ${mode} **`)
 	if(!filename) throw('You need to give a file name! ')
-	const filePath = path.resolve(__dirname, 'styles', filename)
-	const data = await fsPromises.readFile(filePath, 'utf8')
-	var styles = JSON.parse(data)
+	try {
+		const filePath = path.resolve(__dirname, 'styles', filename)
+		const outPath = path.resolve(__dirname, 'styles', '.current.json')
+		const data = await fsPromises.readFile(filePath, 'utf8')
+		var styles = JSON.parse(data)
+		await fsPromises.writeFile(outPath, data, 'utf8')
+	} catch (e) {
+		console.log(e)
+		throw('Style import failed')
+	}
+
 
 	if(mode == 'clear') {
 		var query = `MATCH (s:Schema) SET s._style = ''`
 		await web.cypher( query)
 	}
 
-	for(style of styles) {
-		if(style.selector.startsWith('node[type=')) {
-			var selector = style.selector.replace('node[type=', '')
-			selector = selector.replace(/[\"|\'|\]]/g,'')
-			var style_str = JSON.stringify(style.style)
-			style_str = style_str.replace(/\'/g, '##')
-			try {
-				var query = `MATCH (s:Schema {_type:"${selector}"}) SET s._style = '${style_str}'`
-				await web.cypher( query)
-			} catch (e) {
-				console.log(`\nWARNING: invalid style for Schema ${selector}\n`)
-				console.log(style.style)
-				var query = `MATCH (s:Schema {_type:"${selector}"}) SET s._style = '{}'`
-				await web.cypher( query)
-			}
-		}
-	}
+	// for(style of styles) {
+	// 	if(style.selector.startsWith('node[type=')) {
+	// 		var selector = style.selector.replace('node[type=', '')
+	// 		selector = selector.replace(/[\"|\'|\]]/g,'')
+	// 		var style_str = JSON.stringify(style.style)
+	// 		style_str = style_str.replace(/\'/g, '##')
+	// 		try {
+	// 			var query = `MATCH (s:Schema {_type:"${selector}"}) SET s._style = '${style_str}'`
+	// 			await web.cypher( query)
+	// 		} catch (e) {
+	// 			console.log(`\nWARNING: invalid style for Schema ${selector}\n`)
+	// 			console.log(style.style)
+	// 			var query = `MATCH (s:Schema {_type:"${selector}"}) SET s._style = '{}'`
+	// 			await web.cypher( query)
+	// 		}
+	// 	}
+	// }
 	console.log('** IMPORT DONE **')
     return styles
 }
@@ -103,8 +111,18 @@ styles.exportStyle = async function(filename) {
 
 styles.getStyle = async function() {
 
-	var styles = [...basestyle] // deep copy
+	try {
+		const inPath = path.resolve(__dirname, 'styles', '.current.json')
+		const data = await fsPromises.readFile(inPath, 'utf8')
+		var current_style = JSON.parse(data)
+	} catch(e) {
+		console.log(e)
+		throw('Could not read current style!')
+	}
 
+	var styles = [...basestyle, ...current_style];
+	//var styles = [...basestyle] // deep copy
+	//
 	const query = "MATCH (s:Schema) return s._type as type, s._style as style"
 	var response = await web.cypher( query)
 	for(var schema of response.result) {

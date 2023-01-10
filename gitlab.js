@@ -4,9 +4,6 @@ const web = require("./web.js")
 const GITLAB_URL = 'https://gitlab.kopla.jyu.fi/api/v4'
 const TOKEN = process.env.GITLAB_TOKEN
 
-const PERSONS = [
-
-]
 
 module.exports = class Gitlab {
 
@@ -225,6 +222,8 @@ module.exports = class Gitlab {
 	}
 
 	async update() {
+		console.log(`Starting to fetch data from ${GITLAB_URL}`)
+		var persons = await web.cypher("MATCH (n) WHERE n._committer_emails RETURN n")
 		var repos = await this.getRepositories()
 		// because of bug in ArcadeDB's Cypher implementation of "merge"
 		// we must create first item with "create"
@@ -256,15 +255,15 @@ module.exports = class Gitlab {
 		return 'done'
 	}
 
-	async matchCommitters(repos) {
+	async matchCommitters(repos, persons) {
 
 		for(var repo of repos) {
 			var url = `${GITLAB_URL}/projects/${repo.id}/repository/commits?private_token=${TOKEN}&per_page=50&order_by=last_activity_at&sort=desc`
 			const committers = new Set();
 			var response = await axios.get(url)
 			for(var commit of response.data) {
-				for(var person of PERSONS) {
-					if(person.emails.includes(commit.author_email)) {
+				for(var person of persons) {
+					if(person._emails.includes(commit.author_email)) {
 						committers.add(person.id)
 					}
 				}

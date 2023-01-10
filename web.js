@@ -80,7 +80,8 @@ web.cypher = async function(query, options, no_console) {
 			return response.data
 		}
 	} catch(e) {
-		throw({msg: 'error in query', query: query})
+		console.log(e)
+		throw({msg: 'error in query', query: query, error: e})
 	}
 }
 

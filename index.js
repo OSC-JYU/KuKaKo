@@ -26,7 +26,7 @@ let docIndex
 		tokenize: "full",
 		document: {
 			id: "id",
-			index: ["label", "description"]
+			index: ["label", "description", "URL"]
 		}
 	})
 	graph = new Graph()
@@ -89,6 +89,7 @@ const upload = multer({
 
 // check that user has rights to use app
 app.use(async function handleError(context, next) {
+	//if(process.env.MODE == 'development') context.request.headers[AUTH_HEADER] = "ari.hayrinen@jyu.fi"
 	if(process.env.MODE == 'development') context.request.headers[AUTH_HEADER] = "local.user@localhost" // dummy shibboleth for local use
 	await next()
 });
@@ -152,6 +153,7 @@ router.get('/api/groups', async function (ctx) {
 
 router.get('/api/search', async function (ctx) {
 	var result =  docIndex.search(ctx.request.query.search)
+	console.log(result)
 	var n = await graph.getSearchData(result)
 	ctx.body = n.result
 })
@@ -246,6 +248,13 @@ router.post('/api/graph/vertices', async function (ctx) {
 })
 
 
+router.delete('/api/graph/vertices/:rid', async function (ctx) {
+	var n = await graph.deleteNode(ctx.request.params.rid)
+	docIndex.remove('#' + ctx.request.params.rid)
+	ctx.body = n
+})
+
+
 router.get('/api/graph/vertices/:rid', async function (ctx) {
 	var n = await graph.getDataWithSchema(ctx.request.params.rid)
 	ctx.body = n
@@ -253,6 +262,12 @@ router.get('/api/graph/vertices/:rid', async function (ctx) {
 
 router.post('/api/graph/vertices/:rid', async function (ctx) {
 	var n = await graph.setNodeAttribute('#' + ctx.request.params.rid, ctx.request.body)
+	var a = await graph.getNodeAttributes(ctx.request.params.rid)
+	if(a.result) {
+		a.result[0].id = a.result[0]['@rid']
+		docIndex.update(a.result[0])
+	}
+
 	ctx.body = n
 })
 
@@ -373,13 +388,14 @@ router.get('/api/gitlab/update', async function (ctx) {
 	ctx.body = n
 })
 
-router.post('/api/upload', upload.single('image'), async function (ctx)  {
-	var me = await graph.myId(ctx.request.headers[AUTH_HEADER])
+router.post('/api/upload/:rid', upload.single('image'), async function (ctx)  {
+	//var me = await graph.myId(ctx.request.headers[AUTH_HEADER])
+	if(!ctx.request.params.rid) throw('Upload needs node RID!')
 
 	var options = {
 		filepath: ctx.file.path,
 		mimetype: ctx.file.mimetype,
-		filename: me.rid.replace('#','') + '.png',
+		filename: ctx.request.params.rid.replace('#','') + '.png',
 		width: 200,
 		heihgt: 200
 	}

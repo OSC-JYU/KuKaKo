@@ -51,6 +51,8 @@ nodes:
       label: Process
   - Activity:
       label: Activity
+  - Profession:
+      label: Profession
 
 
 
@@ -100,7 +102,13 @@ edges:
   - Person:USER_OF_DEVICE:Device:
       label: user of
       label_rev: users
-  - Room:HAS_MANUAL:Document:
+  - Device:HAS_MANUAL:Document:
+      label: manual
+      label_rev: manual for device
+  - Device:HAS_LOCATON_IN_ROOM:Room:
+      label: is located in room
+      label_rev: devices
+  - Room:HAS_AV_MANUAL:Document:
       label: AV-guide
       label_rev: guide for room
   - Course:IS_ON_ROOM:Room:
@@ -112,6 +120,9 @@ edges:
   - Person:MAINTAINER_OF_DOC:Document:
       label: maintainer of
       label_rev: maintainers
+  - Person:AUTHOR_OF_DOC:Document:
+      label: author
+      label_rev: authors
   - Person:DEVELOPER_OF:Application:
       label: developer of
       label_rev: developers

@@ -213,8 +213,20 @@
 	 },
 
 	 {
+		 "selector": "node[type='WorkingGroup']",
+		 "style": {
+			 "width": 180,
+			 "height": 80,
+			 "shape": "rectangle",
+			 "color":"black",
+			 "background-color": "white"
+		 }
+	 },
+
+	 {
 		 "selector": "node[type='Document']",
 		 "style": {
+			 "width": 180,
 			 "shape": "rectangle",
 			 "color":"black",
 			 "background-color": "white"

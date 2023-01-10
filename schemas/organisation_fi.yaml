@@ -50,8 +50,14 @@ nodes:
       label: prosessi
   - Activity:
       label: toiminto
-
-
+  - Profession:
+      label: ammattinimike
+  - Conversation:
+      label: keskustelu
+      URL: ''
+  - Channel:
+      label: kanava
+      URL: ''
 
 edges:
   - Person:IS_MEMBER_OF:Team:
@@ -66,6 +72,12 @@ edges:
   - Person:KNOWS:Language:
       label: osaan
       label_rev: osaajat
+  - Person:HAS_STUDIES_LANGUAGE:Language:
+      label: on opiskellut
+      label_rev: ovat opiskelleet
+  - Person:HAS_INTEREST_LANGUAGE:Language:
+      label: haluaisin opiskella
+      label_rev: kielestä kiinnostuneet
   - Person:CONTENT_MANAGER_OF:Site:
       label: ylläpitää aineistoa
       label_rev: aineistoylläpitäjä
@@ -75,6 +87,9 @@ edges:
   - Person:MAINTAINER_OF:Service:
       label: ylläpitää
       label_rev: ylläpitäjä
+  - Person:MAIN_USER_OF:Service:
+      label: pääkäyttäjä
+      label_rev: pääkäyttäjät
   - Person:USER_OF:Service:
       label: käyttää
       label_rev: käyttäjät
@@ -87,7 +102,6 @@ edges:
   - Person:HAS_LOCATION:QueryMap:
       label: sijaitsen
       label_rev: henkilöt
-
   - Person:IS_MEMBER_OF_PROJECT:Project:
       label: osallistun
       label_rev: osallistujat
@@ -100,18 +114,67 @@ edges:
   - Person:USER_OF_DEVICE:Device:
       label: käytän
       label_rev: käyttäjät
-  - Room:HAS_MANUAL:Document:
-      label: AV-ohje
-      label_rev: ohje tilaan
-  - Course:IS_ON_ROOM:Room:
-      label: opetustila
-      label_rev: kurssit
   - Person:TEACH:Course:
       label: opetan
       label_rev: opettajat
   - Person:MAINTAINER_OF_DOC:Document:
       label: ylläpidän
       label_rev: ylläpitäjät
-  - Person:DEVELOPER_OF:Application:
-      label: kehittää
-      label_rev: kehittäjä
+  - Person:MAINTAINER_OF_CHANNEL:Channel:
+      label: ylläpidän
+      label_rev: ylläpitäjät
+  - Person:AUTHOR_OF_DOC:Document:
+      label: tekijä
+      label_rev: tekijät
+
+
+  - Device:HAS_MANUAL:Document:
+      label: ohje
+      label_rev: ohje laitteelle
+  - Device:HAS_LOCATON_IN_ROOM:Room:
+      label: sijaitsee tilassa
+      label_rev: laitteet
+
+  - Room:HAS_AV_MANUAL:Document:
+      label: AV-ohje
+      label_rev: ohje tilaan
+
+  - Course:IS_ON_ROOM:Room:
+      label: opetustila
+      label_rev: kurssit
+
+  - Document:IS_DOCUMENT_OF_PROJECT:Project:
+      label: liittyy projektiin
+      label_rev: dokumentit
+  - Document:IS_DOCUMENT_OF_WORKING_GROUP:WorkingGroup:
+      label: liittyy työryhmään
+      label_rev: dokumentit
+  - Document:IS_DOCUMENT_OF_TEAM:Team:
+      label: liittyy tiimiin
+      label_rev: dokumentit
+  - Document:IS_DOCUMENT_OF_DEVICE:Device:
+      label: liittyy laitteeseen
+      label_rev: dokumentit
+  - Document:IS_DOCUMENT_OF_SERVICE:Service:
+      label: liittyy järjestelmään
+      label_rev: dokumentit
+
+  - Service:SERVICE_HAS_CHANNEL:Channel:
+      label: keskustelukanava
+      label_rev: järjestelmä
+  - Project:PROJECT_HAS_CHANNEL:Channel:
+      label: keskustelukanava
+      label_rev: järjestelmä
+  - WorkingGroup:WORKING_GROUP_HAS_CHANNEL:Channel:
+      label: keskustelukanava
+      label_rev: järjestelmä
+
+  - Conversation:CONVERSATION_IS_ABOUT_SERVICE:Service:
+      label: liittyy järjestelmään
+      label_rev: keskustelut
+  - Conversation:CONVERSATION_IS_ABOUT_PROJECT:Project:
+      label: liittyy projektiin
+      label_rev: keskustelut
+  - Conversation:CONVERSATION_IS_ABOUT_WORKING_GROUP:WorkingGroup:
+      label: liittyy työryhmään
+      label_rev: keskustelut

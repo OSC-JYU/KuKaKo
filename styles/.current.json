@@ -1,0 +1,57 @@
+[
+	{
+		"selector": "node[type='Person']",
+		"style": {
+			"shape": "roundrectangle",
+			"height": "(node) => node.data('me') ? 120 : 80",
+			"width": "(node) => node.data('me') ? 120 : 80",
+			"font-size": 10,
+			"text-valign": "top",
+			"color":"black",
+			"background-color": "(node) => node.data('me') ? '#1C86AA' : '#8ed1e8'",
+			"background-position-x":"2px",
+			"background-position-y":"0px",
+			"background-width":"20px",
+			"background-height":"20px",
+			"background-fit":"cover",
+			"text-background-color": "#ffffff",
+			"text-background-opacity": 1,
+			"background-image": "person_icon.svg",
+			"content": "(node) => node.data('name')"
+		}
+	},
+
+	{
+		"selector": "node[type='empty']",
+		"style": {
+			"content": "no results",
+			"color":"white",
+			"background-color": "#1C86AA"
+		}
+	},
+
+	{
+		"selector": "node[type='Menu']",
+		"style": {
+			"color":"white",
+			"background-color": "#3F7FBF"
+		}
+	},
+
+	{
+		"selector": "node[type='Tag']",
+		"style": {
+			"color":"black",
+			"background-color": "#F1C827"
+		}
+	},
+
+	{
+		"selector": "node[type='Query']",
+		"style": {
+			"color":"black",
+			"background-color": "#F1C827"
+		}
+	}
+
+]

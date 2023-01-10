@@ -93,7 +93,7 @@ module.exports = class Graph {
 
 	async createIndex() {
 		console.log('Starting to index...')
-		var query = 'MATCH (n) return id(n) as id, n.label as label'
+		var query = 'MATCH (n) return id(n) as id, n.label as label, n.description as description'
 		try {
 			var result = await web.cypher( query)
 			try {
@@ -121,9 +121,8 @@ module.exports = class Graph {
 
 	async create(type, data) {
         var data_str_arr = []
-		const fields = ['label', 'tags', 'id', 'description', 'URL', 'repository', 'description', 'query', 'layout', '_access', 'scale', 'image', '_type']
 		// expression data to string
-		for(var key of fields) {
+		for(var key in data) {
 			if(data[key]) {
 				if(Array.isArray(data[key]) && data[key].length > 0) {
 					data[key] = data[key].map(i => `'${i}'`).join(',')
@@ -145,6 +144,21 @@ module.exports = class Graph {
 		var query = `CREATE (n:${type} {${data_str_arr.join(',')}}) return n`
         console.log(query)
 		return web.cypher( query)
+	}
+
+
+	async deleteNode(rid) {
+		if(!rid.match(/^#/)) rid = '#' + rid
+		var query = `MATCH (n) WHERE id(n) = '${rid}' RETURN labels(n) as type`
+		var response = await web.cypher(query)
+		if(response.result && response.result.length == 1) {
+			var type = response.result[0].type
+			var query_delete = `DELETE FROM ${type} WHERE @rid = "${rid}"`
+			console.log(query_delete)
+			return web.sql(query_delete)
+		}
+
+		return response
 	}
 
 
@@ -180,21 +194,21 @@ module.exports = class Graph {
 					console.log(e)
 					throw('Merge failed!')
 				}
-
 			}
 		} else {
 
 		}
-
 	}
 
 
 	// data = {from:[RID] ,relation: '', to: [RID]}
-	async connect(from, relation, to) {
+	async connect(from, relation, to, match_by_id) {
 		var relation_type = ''
 		var attributes = ''
-		if(!from.match(/^#/)) from = '#' + from
-		if(!to.match(/^#/)) to = '#' + to
+		if(!match_by_id) {
+			if(!from.match(/^#/)) from = '#' + from
+			if(!to.match(/^#/)) to = '#' + to
+		}
 		//relation = this.checkRelationData(relation)
 		console.log(relation)
 		if(typeof relation == 'object') {
@@ -205,6 +219,10 @@ module.exports = class Graph {
 			relation_type = relation
 		}
 		var query = `MATCH (from), (to) WHERE id(from) = "${from}" AND id(to) = "${to}" CREATE (from)-[:${relation_type} ${attributes}]->(to) RETURN from, to`
+		if(match_by_id) {
+			query = `MATCH (from), (to) WHERE from.id = "${from}" AND to.id = "${to}" CREATE (from)-[:${relation_type} ${attributes}]->(to) RETURN from, to`
+		}
+
 		return web.cypher( query)
 	}
 
@@ -489,54 +507,23 @@ module.exports = class Graph {
 		try {
 			for(var node of graph.nodes) {
 				const type = Object.keys(node)[0]
-				var attributes = []
-				for(var key of Object.keys(node[type])) {
-					if(key === '_active') attributes.push(`s.${key} = ${JSON.parse(node[type][key])}`)
-					else attributes.push(`s.${key} = "${node[type][key]}"`)
-				}
-				if(!('_active' in node[type])) attributes.push(`s._active = true`)
-
-				var insert = `CREATE (s:${type}) SET ${attributes.join(',')}`
-				console.log(insert)
-				var reponse = await web.cypher( insert)
+				await this.create(type, node[type])
 			}
 
 			for(var edge of graph.edges) {
 				const edge_key = Object.keys(edge)[0]
 				const splitted = edge_key.split('>')
 				if(splitted.length == 3) {
+					const link = splitted[1].trim()
 					const from = splitted[0].split(':')
 					const to = splitted[2].split(':')
-					const from_type = from[0]
-					const from_id = from[1]
-					const to_type = to[0]
-					const to_id = to[1]
-					console.log('from:' + from_type)
-					console.log('id:' + from_id)
-					console.log('to:' + to_type)
-					console.log('id:' + to_id)
-
-					var attributes = []
-					var attr_str = ''
-					if(edge[edge_key]) {
-						for(var key of Object.keys(edge[edge_key])) {
-							attributes.push(`r.${key} = "${edge[edge_key][key]}"`)
-						}
-						console.log(attributes)
-						if(attributes.length) attr_str = 'SET ' + attributes.join(',')
-					}
-
-					var link_query = `MATCH (from:${from_type} {id: "${from_id}"}), (to: ${to_type} {id:"${to_id}"}) MERGE (from)-[r:${splitted[1]}]->(to) ${attr_str}`
-					var response = await web.cypher( link_query)
+					const from_id = from[1].trim()
+					const to_id = to[1].trim()
+					await this.connect(from_id, {type:link, attributes: edge[edge_key]}, to_id, true)
 				} else {
 					throw('Graph edge error: ' + Object.keys(edge)[0])
 				}
-
 			}
-			// 	var edge_parts = type.split(':')
-			// 	var link_query = `MATCH (from:Schema {_type: "${edge_parts[0]}"}), (to: Schema {_type:"${edge_parts[2]}"}) MERGE (from)-[r:${edge_parts[1]}]->(to) SET r.label ="${edge[type].label}", r.label_rev = "${edge[type].label_rev}"`
-			// 	var reponse = await web.cypher( link_query)
-			// }
 		} catch (e) {
 			throw(e)
 		}
