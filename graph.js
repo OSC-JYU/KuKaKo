@@ -462,7 +462,7 @@ module.exports = class Graph {
 
 
 	async importGraphYAML(filename, mode) {
-		console.log(`** importing graph ${filename} **`)
+		console.log(`** importing graph ${filename} with mode ${mode} **`)
 		try {
 			const file_path = path.resolve('./graph', filename)
 			const data = await fsPromises.readFile(file_path, 'utf8')
@@ -590,8 +590,16 @@ module.exports = class Graph {
 		const result =  await web.cypher( query)
 		if(result.result.length)
 			return result.result[0]
-		else
-			return []
+		else {
+			query = `MATCH (l:Layout) WHERE l.target = "${rid}" AND l.user = "${rid}" return l`
+			const result2 =  await web.cypher( query)
+			if(result2.result.length) {
+				return result2.result[0]
+			}
+		}
+
+		return []
+
 	}
 
 
