@@ -12,6 +12,10 @@ const DB_HOST = process.env.ARCADEDB_HOST || 'http://localhost'
 const DB = process.env.ARCADEDB_DB || 'kukako'
 const PORT = process.env.ARCADEDB_PORT || 2480
 const URL = `${DB_HOST}:${PORT}/api/v1/command/${DB}`
+const timers = require('timers-promises')
+
+// some layouts are same for all users
+const COMMON_LAYOUTS = ['schema', 'navigation', 'about']
 
 // Assigning to exports will not modify module, must use module.exports
 module.exports = class Graph {
@@ -19,7 +23,7 @@ module.exports = class Graph {
 	async initDB(docIndex) {
 		console.log(`ArcadeDB: ${web.getURL()}`)
 		console.log(`Checking database...`)
-		let {setTimeout} = await import('timers/promises')
+		//let {setTimeout} = await import('timers/promises')
 		this.docIndex = docIndex
 		var query = 'MATCH (n:Schema) return n'
 		try {
@@ -30,7 +34,7 @@ module.exports = class Graph {
 				await web.createDB()
 			} catch (e) {
 				console.log(`Could not init database. \nTrying again in 10 secs...`)
-				await setTimeout(10000)
+				await timers.setTimeout(10000)
 				try {
 					await web.createDB()
 				} catch (e) {
@@ -571,20 +575,47 @@ module.exports = class Graph {
 
 
 	async setLayout(body, me) {
+		
+		var query = ''
+		var filename = ''
 		if(!body.target || !body.data) throw('data missing')
-		if(!body.target.match(/^#/)) body.target = '#' + body.target
+
 		var for_cypher = {}
 		for(var id in body.data) {
 			var id_clean = id.replace('#', 'node').replace(':','_')
 			for_cypher[id_clean] = body.data[id]
 		}
 		var as_string = JSON5.stringify(for_cypher)
-		const query = `MERGE (l:Layout {user: "${me.rid}", target: "${body.target}"}) SET l.positions = ${as_string} RETURN l`
+
+		if(COMMON_LAYOUTS .includes(body.target)) {
+			filename = `layout_${body.target}:${body.target}.json`
+			query = `MERGE (l:Layout {user: "${body.target}", target: "${body.target}"}) SET l.positions = "${filename}" RETURN l`
+			
+		} else {
+			if(!body.target.match(/^#/)) body.target = '#' + body.target
+			filename = `layout_${body.target}:${me.rid}.json`
+			query = `MERGE (l:Layout {user: "${me.rid}", target: "${body.target}"}) SET l.positions = "${filename}" RETURN l`
+		}
+
+		const filePath = path.resolve('./layouts', filename)
+		await fsPromises.writeFile(filePath, JSON.stringify(body.data), 'utf8')
 		return await web.cypher( query)
 	}
 
 
 	async getLayoutByTarget(rid, me) {
+
+		var filename = ''
+		if(COMMON_LAYOUTS .includes(rid)) {
+			filename = `layout_${rid}:${rid}.json`
+			const filePath = path.resolve('./layouts', filename)
+			var locations = await fsPromises.readFile(filePath, 'utf8')
+			var data = JSON.parse(locations)
+			//var query = `MATCH (l:Layout) WHERE l.target = "${rid}" AND l.user = "${rid}" return l`
+			//const result3 =  await web.cypher( query)
+			return {positions: data}
+		}
+
 		if(!rid.match(/^#/)) rid = '#' + rid
 		var query = `MATCH (l:Layout) WHERE l.target = "${rid}" AND l.user = "${me.rid}" return l`
 		const result =  await web.cypher( query)
