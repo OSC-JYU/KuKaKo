@@ -588,18 +588,16 @@ module.exports = class Graph {
 		var as_string = JSON5.stringify(for_cypher)
 
 		if(COMMON_LAYOUTS .includes(body.target)) {
-			filename = `layout_${body.target}:${body.target}.json`
-			query = `MERGE (l:Layout {user: "${body.target}", target: "${body.target}"}) SET l.positions = "${filename}" RETURN l`
+			filename = `layout_${body.target}-${body.target}.json`
 			
 		} else {
 			if(!body.target.match(/^#/)) body.target = '#' + body.target
-			filename = `layout_${body.target}:${me.rid}.json`
-			query = `MERGE (l:Layout {user: "${me.rid}", target: "${body.target}"}) SET l.positions = "${filename}" RETURN l`
+			filename = `layout_${body.target}-${me.rid}.json`
 		}
 
 		const filePath = path.resolve('./layouts', filename)
 		await fsPromises.writeFile(filePath, JSON.stringify(body.data), 'utf8')
-		return await web.cypher( query)
+	
 	}
 
 
@@ -607,29 +605,20 @@ module.exports = class Graph {
 
 		var filename = ''
 		if(COMMON_LAYOUTS .includes(rid)) {
-			filename = `layout_${rid}:${rid}.json`
+			filename = `layout_${rid}-${rid}.json`
+
+		} else {
+			if(!rid.match(/^#/)) rid = '#' + rid
+			filename = `layout_${rid}-${me.rid}.json`
+		}
+		try {
 			const filePath = path.resolve('./layouts', filename)
 			var locations = await fsPromises.readFile(filePath, 'utf8')
 			var data = JSON.parse(locations)
-			//var query = `MATCH (l:Layout) WHERE l.target = "${rid}" AND l.user = "${rid}" return l`
-			//const result3 =  await web.cypher( query)
 			return {positions: data}
+		} catch (e) {
+			return []
 		}
-
-		if(!rid.match(/^#/)) rid = '#' + rid
-		var query = `MATCH (l:Layout) WHERE l.target = "${rid}" AND l.user = "${me.rid}" return l`
-		const result =  await web.cypher( query)
-		if(result.result.length)
-			return result.result[0]
-		else {
-			query = `MATCH (l:Layout) WHERE l.target = "${rid}" AND l.user = "${rid}" return l`
-			const result2 =  await web.cypher( query)
-			if(result2.result.length) {
-				return result2.result[0]
-			}
-		}
-
-		return []
 
 	}
 
