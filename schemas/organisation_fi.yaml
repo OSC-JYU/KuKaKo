@@ -36,7 +36,7 @@ nodes:
       label: laite
   - Room:
       label: tila
-  - Document:
+  - Webdoc:
       label: dokumentti
       URL: ''
   - Course:
@@ -117,25 +117,25 @@ edges:
   - Person:TEACH:Course:
       label: opetan
       label_rev: opettajat
-  - Person:MAINTAINER_OF_DOC:Document:
+  - Person:MAINTAINER_OF_DOC:Webdoc:
       label: ylläpidän
       label_rev: ylläpitäjät
   - Person:MAINTAINER_OF_CHANNEL:Channel:
       label: ylläpidän
       label_rev: ylläpitäjät
-  - Person:AUTHOR_OF_DOC:Document:
+  - Person:AUTHOR_OF_DOC:Webdoc:
       label: tekijä
       label_rev: tekijät
 
 
-  - Device:HAS_MANUAL:Document:
+  - Device:HAS_MANUAL:Webdoc:
       label: ohje
       label_rev: ohje laitteelle
   - Device:HAS_LOCATON_IN_ROOM:Room:
       label: sijaitsee tilassa
       label_rev: laitteet
 
-  - Room:HAS_AV_MANUAL:Document:
+  - Room:HAS_AV_MANUAL:Webdoc:
       label: AV-ohje
       label_rev: ohje tilaan
 
@@ -143,19 +143,19 @@ edges:
       label: opetustila
       label_rev: kurssit
 
-  - Document:IS_DOCUMENT_OF_PROJECT:Project:
+  - Webdoc:IS_DOCUMENT_OF_PROJECT:Project:
       label: liittyy projektiin
       label_rev: dokumentit
-  - Document:IS_DOCUMENT_OF_WORKING_GROUP:WorkingGroup:
+  - Webdoc:IS_DOCUMENT_OF_WORKING_GROUP:WorkingGroup:
       label: liittyy työryhmään
       label_rev: dokumentit
-  - Document:IS_DOCUMENT_OF_TEAM:Team:
+  - Webdoc:IS_DOCUMENT_OF_TEAM:Team:
       label: liittyy tiimiin
       label_rev: dokumentit
-  - Document:IS_DOCUMENT_OF_DEVICE:Device:
+  - Webdoc:IS_DOCUMENT_OF_DEVICE:Device:
       label: liittyy laitteeseen
       label_rev: dokumentit
-  - Document:IS_DOCUMENT_OF_SERVICE:Service:
+  - Webdoc:IS_DOCUMENT_OF_SERVICE:Service:
       label: liittyy järjestelmään
       label_rev: dokumentit
 

@@ -37,8 +37,8 @@ nodes:
       label: Device
   - Room:
       label: Room
-  - Document:
-      label: Document
+  - Webdoc:
+      label: Webdoc
       URL: ''
   - Course:
       label: Course
@@ -102,13 +102,13 @@ edges:
   - Person:USER_OF_DEVICE:Device:
       label: user of
       label_rev: users
-  - Device:HAS_MANUAL:Document:
+  - Device:HAS_MANUAL:Webdoc:
       label: manual
       label_rev: manual for device
   - Device:HAS_LOCATON_IN_ROOM:Room:
       label: is located in room
       label_rev: devices
-  - Room:HAS_AV_MANUAL:Document:
+  - Room:HAS_AV_MANUAL:Webdoc:
       label: AV-guide
       label_rev: guide for room
   - Course:IS_ON_ROOM:Room:
@@ -117,10 +117,10 @@ edges:
   - Person:TEACH:Course:
       label: teacher of
       label_rev: teachers
-  - Person:MAINTAINER_OF_DOC:Document:
+  - Person:MAINTAINER_OF_DOC:Webdoc:
       label: maintainer of
       label_rev: maintainers
-  - Person:AUTHOR_OF_DOC:Document:
+  - Person:AUTHOR_OF_DOC:Webdoc:
       label: author
       label_rev: authors
   - Person:DEVELOPER_OF:Application:

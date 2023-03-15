@@ -224,7 +224,7 @@
 	 },
 
 	 {
-		 "selector": "node[type='Document']",
+		 "selector": "node[type='Webdoc']",
 		 "style": {
 			 "width": 180,
 			 "shape": "rectangle",

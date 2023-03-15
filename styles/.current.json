@@ -1,8 +1,47 @@
 [
+
+	{
+		"selector": "node[type='empty']",
+		"style": {
+			"content": "ei tuloksia",
+			"color":"white",
+			"background-color": "#1C86AA"
+		}
+	},
+
+	{
+		"selector": "node:parent[type='Cluster']",
+		"style": {
+			"content": "Cluster",
+			"color":"black",
+			"background-color": "#e6e6e6"
+		}
+	},
+
+	{
+		"selector": "node[type='Schema']",
+		"style": {
+			"color":"white",
+			"background-color": "#1C86AA"
+		}
+	},
+
+	{
+		"selector": "node:parent",
+		"style": {
+			"font-size":12,
+			"text-valign": "top",
+			"color":"black"
+		}
+	},
+
+
+
+
 	{
 		"selector": "node[type='Person']",
 		"style": {
-			"shape": "roundrectangle",
+			"shape": "ellipse",
 			"height": "(node) => node.data('me') ? 120 : 80",
 			"width": "(node) => node.data('me') ? 120 : 80",
 			"font-size": 10,
@@ -16,42 +55,214 @@
 			"background-fit":"cover",
 			"text-background-color": "#ffffff",
 			"text-background-opacity": 1,
-			"background-image": "person_icon.svg",
+			"background-image": "(node) => node.data('image') ? node.data('image') : 'icons/person_icon.svg'",
 			"content": "(node) => node.data('name')"
 		}
 	},
 
 	{
-		"selector": "node[type='empty']",
+		"selector": "node[type='Team']",
 		"style": {
-			"content": "no results",
+		     "width": 60,
+		     "height": 50,
+		     "background-color": "#444791",
+		     "color": "white",
+		     "text-background-color": "#ffffff",
+		     "text-overflow-wrap": "whitespace",
+		     "text-max-width": "50px",
+		     "background-position-x":"2px",
+		     "background-position-y":"0px",
+		     "background-width":"20px",
+		     "background-height":"20px",
+		     "background-image": "icons/team_icon2.svg",
+		     "content": "(node) => node.data('name')"
+		 }
+	 },
+
+	 {
+ 		"selector": "node[type='Project']",
+ 		"style": {
+ 		     "width": 120,
+ 		     "height": 80,
+ 		     "background-color": "#7F96AD",
+ 		     "color": "white",
+ 		     "text-background-color": "#ffffff",
+ 		     "text-overflow-wrap": "whitespace",
+ 		     "text-max-width": "100px",
+
+ 		     "content": "(node) => node.data('name')"
+ 		 }
+ 	 },
+
+	 {
+		 "selector": "node[type='QueryMap']",
+		 "style": {
+			 "height": 40,
+			 "width": 40,
+			 "shape": "rectangle",
+			 "background-color": "white",
+			 "font-size": 10,
+			 "text-valign": "top",
+			 "color":"black",
+			 "border-width": 0,
+			 "background-fit": "cover",
+			 "background-image": "icons/map_icon.svg"
+		 }
+	 },
+
+	 {
+		 "selector": "node[type='Container']",
+		 "style": {
+			 "height": 40,
+			 "width": 40,
+			 "font-size": 10,
+			 "text-valign": "top",
+			 "color":"black",
+			 "background-fit": "cover",
+			 "background-image": "icons/docker_icon.svg"
+		 }
+	 },
+
+	 {
+		 "selector": "node[type='Repository']",
+		 "style": {
+			 "height": 20,
+			 "font-size": 8,
+			 "color":"white",
+			 "background-position-x": "3px",
+		     "background-width": "20px",
+			 "background-image": "icons/gitlab_icon.svg"
+		 }
+	 },
+
+	 {
+		 "selector": "node[type='Device']",
+		 "style": {
+			 "shape": "rectangle",
+			 "height": 20,
+			 "width": 20,
+			 "color":"black",
+			 "text-valign": "top",
+			  "border-width": 0,
+			 "background-color": "white",
+			 "background-fit": "cover",
+			 "background-image": "icons/pc-display-horizontal.svg"
+		 }
+	 },
+
+
+	 {
+		 "selector": "node[type='Application']",
+		 "style": {
+			 "color":"white",
+			 "background-color": "purple"
+		 }
+	 },
+
+	 {
+		 "selector": "node[type='Journal']",
+		 "style": {
+			 "height": 50,
+			 "width": 40,
+			 "color":"white",
+			 "background-color": "purple"
+		 }
+	 },
+
+	 {
+		 "selector": "node[type='Article']",
+		 "style": {
+			 "color":"white",
+			 "background-color": "green"
+		 }
+	 },
+
+	 {
+		"selector": "node[type='API']",
+		"style": {
+			"width": 180,
 			"color":"white",
-			"background-color": "#1C86AA"
+			"background-color": "#737786"
 		}
 	},
 
-	{
-		"selector": "node[type='Menu']",
-		"style": {
-			"color":"white",
-			"background-color": "#3F7FBF"
-		}
-	},
+	 {
+		 "selector": "node[type='DockerImage']",
+		 "style": {
+			 "width": 180,
+			 "color":"white",
+			 "background-color": "gray"
+		 }
+	 },
 
-	{
-		"selector": "node[type='Tag']",
-		"style": {
+	 {
+		 "selector": "node[type='Database']",
+		 "style": {
+			 "color":"black",
+			 "background-color": "cyan"
+		 }
+	 },
+
+	 {
+		 "selector": "node[type='Service']",
+		 "style": {
+			"height": "80px",
 			"color":"black",
-			"background-color": "#F1C827"
-		}
-	},
+			"background-color": "orange"
+		 }
+	 },
 
-	{
-		"selector": "node[type='Query']",
-		"style": {
-			"color":"black",
-			"background-color": "#F1C827"
-		}
-	}
+	 {
+		 "selector": "node[type='WorkingGroup']",
+		 "style": {
+			 "width": 180,
+			 "height": 80,
+			 "shape": "rectangle",
+			 "color":"black",
+			 "background-color": "white"
+		 }
+	 },
+
+	 {
+		 "selector": "node[type='Document']",
+		 "style": {
+			 "width": 180,
+			 "shape": "rectangle",
+			 "color":"black",
+			 "background-color": "white"
+		 }
+	 },
+
+	 {
+		 "selector": "node[type='HelpDeskQue']",
+		 "style": {
+			 "color":"white",
+			 "background-color": "#002957"
+		 }
+	 },
+
+	 {
+		 "selector": "node[type='Menu']",
+		 "style": {
+			 "color":"white",
+			 "background-color": "#3F7FBF"
+		 }
+	 },
+
+	 {
+		 "selector": "node[type='Tag']",
+		 "style": {
+			 "color":"black",
+			 "background-color": "#F1C827"
+		 }
+	 },
+
+	 {
+		 "selector": "node[type='Query']",
+		 "style": {
+			 "color":"black",
+			 "background-color": "#F1C827"
+		 }
+	 }
 
 ]

@@ -31,6 +31,35 @@ BETTER DOCS COMING SOON!
 There is not much to see in fresh install. Just one node saying that's "Local You".
 If you click the blue pencil icon, you can see more pencil icons and from there you can edit description and label.
 
+
+## User Interface
+
+### Queries
+Queries use powerful Cypher query language and they are the main tool for showing graph data nicely to users. Queries are linked to Menu nodes.
+Queries are nodes with type Query.
+
+### Menus
+Menus are query holders in the user interface. Menus are linked to UserGroups and are visible only Persons within that UserGrop.
+Menus are nodes with type "Menu".
+
+## User groups and roles
+Persons are also users of KuKaKo.
+
+### User Groups
+User groups define what user can see in the system. Each user group can have their own menus and queries on them.
+User groups are nodes with type UserGroup.
+
+### User Roles
+User roles define what user can do in the system and user can have only one role. There are three user roles in KuKaKo.
+
+1. **user**
+"User" can edit only relationships from and to "me".
+2.**creator**
+"Creator" can add nodes, edit nodes and add and edit all relationships.
+3. **admin**
+admin can set user roles for other users and user can edit schema.
+
+
 ### Schema
 
 The reason that you can't do more is that there is no schema. Schema is guide for humans of what kind of data you can produce with KuKako.
@@ -75,32 +104,6 @@ KuKaKo relies request headers for authentication. This means that every request 
 
 Also note that the same header is used for 'id' of Person nodes.
 
-## User Interface
-
-### Queries
-Queries use powerful Cypher query language and they are the main tool for showing graph data nicely to users. Queries are linked to Menu nodes.
-Queries are nodes with type Query.
-
-### Menus
-Menus are query holders in the user interface. Menus are linked to UserGroups and are visible only Persons within that UserGrop.
-Menus are nodes with type "Menu".
-
-## User groups and roles
-Persons are also users of KuKaKo.
-
-### User Groups
-User groups define what user can see in the system. Each user group can have their own menus and queries on them.
-User groups are nodes with type UserGroup.
-
-### User Roles
-User roles define what user can do in the system and user can have only one role. There are three user roles in KuKaKo.
-
-1. **user**
-"User" can edit only relationships from and to "me".
-2.**creator**
-"Creator" can add nodes, edit nodes and add and edit all relationships.
-3. **admin**
-admin can set user roles for other users and user can edit schema.
 
 
 ### Development
@@ -111,3 +114,13 @@ If you have NodeJS installed, you can run KuKaKo directly on NodeJS (for develop
 	cd kukako
 	npm install
 	MODE=development ARCADEDB_PASSWORD=node_master node index.js
+
+
+# FAQ
+
+Q: How to run KuKaKo in non root URL (like "domain.org/sub/kukako")?
+
+A: You must set path in three files in UI code.
+/src/web.js:  axios.defaults.baseURL = '/s/kukako'
+/src/main.js: let history = '/s/kukako'
+vite.config.js: base: '/s/kukako/'
