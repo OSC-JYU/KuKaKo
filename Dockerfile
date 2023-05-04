@@ -1,7 +1,7 @@
-FROM node:16-alpine
+FROM node:18-alpine
 
 # Install app dependencies
-RUN apk update && apk add bash
+RUN apk update && apk add --no-cache bash 
 COPY package.json /src/package.json
 RUN cd /src; npm install
 

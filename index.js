@@ -89,9 +89,18 @@ const upload = multer({
 
 // check that user has rights to use app
 app.use(async function handleError(context, next) {
-	//if(process.env.MODE == 'development') context.request.headers[AUTH_HEADER] = "ari.hayrinen@jyu.fi"
 	if(process.env.MODE == 'development') context.request.headers[AUTH_HEADER] = "local.user@localhost" // dummy shibboleth for local use
-	await next()
+
+	if(process.env.CREATE_USERS_ON_THE_FLY == 1) {
+		await next()
+	} else {
+		var me = await graph.myId(context.request.headers[AUTH_HEADER])
+		if(!me) {
+			context.status = 401
+		} else {
+			await next()
+		}
+	}
 });
 
 // catch errors in routes
@@ -137,10 +146,13 @@ router.get('/api', function (ctx) {
 })
 
 router.get('/api/me', async function (ctx) {
-	// keep list of visitors so that we do not create double users on sequential requests
-	if(!visitors.includes(ctx.request.headers[AUTH_HEADER])) {
-		visitors.push(ctx.request.headers[AUTH_HEADER])
-		await graph.checkMe(ctx.request.headers[AUTH_HEADER])
+	
+	if(process.env.CREATE_USERS_ON_THE_FLY = 1) {
+		// keep list of visitors so that we do not create double users on sequential requests
+		if(!visitors.includes(ctx.request.headers[AUTH_HEADER])) {
+			visitors.push(ctx.request.headers[AUTH_HEADER])
+			await graph.checkMe(ctx.request.headers[AUTH_HEADER])
+		}
 	}
 	var me = await graph.myId(ctx.request.headers[AUTH_HEADER])
 	ctx.body = {rid: me.rid, admin: me.admin, group:me.group, access:me.access, id: ctx.request.headers[AUTH_HEADER], mode:process.env.MODE ? process.env.MODE : 'production' }
@@ -221,6 +233,11 @@ router.post('/api/schemas/import', async function (ctx) {
 
 router.post('/api/graph/import', async function (ctx) {
 	var n = await graph.importGraphYAML(ctx.request.query.filename, ctx.request.query.mode)
+	ctx.body = n
+})
+
+router.post('/api/graph/export', async function (ctx) {
+	var n = await graph.exportGraphYAML(ctx.request.query.filename, ctx.request.query.mode)
 	ctx.body = n
 })
 
@@ -389,7 +406,6 @@ router.get('/api/gitlab/update', async function (ctx) {
 })
 
 router.post('/api/upload/:rid', upload.single('image'), async function (ctx)  {
-	//var me = await graph.myId(ctx.request.headers[AUTH_HEADER])
 	if(!ctx.request.params.rid) throw('Upload needs node RID!')
 
 	var options = {
@@ -397,15 +413,52 @@ router.post('/api/upload/:rid', upload.single('image'), async function (ctx)  {
 		mimetype: ctx.file.mimetype,
 		filename: ctx.request.params.rid.replace('#','') + '.png',
 		width: 200,
-		heihgt: 200
+		height: 200
 	}
 
-	await media.resizeImage(options)
+	media.resizeImage(options)
+    ctx.body = 'done';
+})
+
+router.post('/api/graph/upload', upload.single('file'), async function (ctx)  {
+
+	var filepath = `graph/${ctx.file.originalname}`
+	var exists = await checkFileExists(filepath)
+	if(!exists) {
+		await fs.promises.rename(ctx.file.path, filepath);
+		console.log('File moved successfully!')
+		ctx.body = 'done';
+	} else {
+		await fs.promises.unlink(ctx.file.path)
+		throw('file exists!')
+	}
+})
+
+
+router.post('/api/schema/upload', upload.single('file'), async function (ctx)  {
+
+    ctx.body = 'done';
+})
+
+router.post('/api/styles/upload', upload.single('file'), async function (ctx)  {
+
     ctx.body = 'done';
 })
 
 
+
 app.use(router.routes());
+
+
+async function checkFileExists(filePath) {
+	try {
+		console.log(filePath)
+	  await fs.access(filePath);
+	  return true;
+	} catch (err) {
+	  return false;
+	}
+  }
 
 
 var set_port = process.env.PORT || 8100

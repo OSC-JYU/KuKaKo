@@ -24,11 +24,12 @@ media.resizeImage = async function(options, ctx) {
 	
 	const resizer =
 	  sharp()
+		.rotate() 
 		.resize(options.width, options.height)
 		.png();
 
 	resizer.options.limitInputPixels = 0
-
+	console.log(options)
 	await pipeline (
 		fs.createReadStream(options.filepath),
 		resizer,
