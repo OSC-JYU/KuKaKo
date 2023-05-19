@@ -55,7 +55,6 @@ module.exports = class Graph {
 			await web.createVertexType('UserGroup')
 			await web.createVertexType('Menu')
 			await web.createVertexType('Query')
-			await web.createVertexType('Layout')
 			await web.createVertexType('Tag')
 			await web.createVertexType('NodeGroup')
 			await schema.importSystemSchema()
@@ -124,6 +123,7 @@ module.exports = class Graph {
 	}
 
 	async create(type, data) {
+		console.log(data)
         var data_str_arr = []
 		// expression data to string
 		for(var key in data) {
@@ -131,9 +131,11 @@ module.exports = class Graph {
 				if(Array.isArray(data[key]) && data[key].length > 0) {
 					data[key] = data[key].map(i => `'${i}'`).join(',')
 					data_str_arr.push(`${key}:[${data[key]}]`)
-				} else {
+				} else if (typeof data[key] == 'string') {
 				    if(data[key].length > MAX_STR_LENGTH) throw('Too long data!')
 				    data_str_arr.push(`${key}:"${data[key].replace(/"/g, '\\"')}"`)
+				} else {
+					data_str_arr.push(`${key}:${data[key]}`)
 				}
             }
 		}
@@ -143,7 +145,7 @@ module.exports = class Graph {
 			if(!data['_access']) data_str_arr.push(`_access: "user"`) // default access for all persons
 		}
 		// _active
-		data_str_arr.push(`_active: true`)
+		if(!data['_active']) data_str_arr.push(`_active: true`)
 
 		var query = `CREATE (n:${type} {${data_str_arr.join(',')}}) return n`
         console.log(query)
@@ -510,19 +512,23 @@ module.exports = class Graph {
 	async writeGraphToDB(graph) {
 		try {
 			for(var node of graph.nodes) {
+				console.log(node)
 				const type = Object.keys(node)[0]
-				await this.create(type, node[type])
+				console.log(type)
+				console.log(node[type])
+				if(type != 'Layout')
+					await this.create(type, node[type])
 			}
 
 			for(var edge of graph.edges) {
 				const edge_key = Object.keys(edge)[0]
-				const splitted = edge_key.split('>')
+				const splitted = edge_key.split('->')
 				if(splitted.length == 3) {
 					const link = splitted[1].trim()
-					const from = splitted[0].split(':')
-					const to = splitted[2].split(':')
-					const from_id = from[1].trim()
-					const to_id = to[1].trim()
+					const [from_type, ...from_rest]= splitted[0].split(':')
+					const [to_type, ...to_rest] = splitted[2].split(':')
+					const from_id = from_rest.join(':').trim()
+					const to_id = to_rest.join(':').trim()
 					await this.connect(from_id, {type:link, attributes: edge[edge_key]}, to_id, true)
 				} else {
 					throw('Graph edge error: ' + Object.keys(edge)[0])
@@ -531,6 +537,58 @@ module.exports = class Graph {
 		} catch (e) {
 			throw(e)
 		}
+	}
+
+
+	async exportGraphYAML(filename) {
+		if(!filename) throw('You need to give a file name! ')
+		var vertex_ids = {}
+		var edge_ids = {}
+		var query = 'MATCH (n) WHERE NOT n:Schema OPTIONAL MATCH (n)-[r]-() RETURN n, r '
+		var schemas = await web.cypher( query, {serializer: 'graph'})
+		var output = {nodes: [], edges: []}
+		for(var vertex of schemas.result.vertices) {
+			if(!vertex_ids[vertex.r]) {
+				 var node_obj = {}
+				 console.log(vertex)
+				 var type = vertex.p['@type']
+				 // old serializer backup
+				 if(vertex.t) type = vertex.t
+				  
+				 node_obj[type] = {...vertex.p}
+				 // make sure there is label property
+				 if(!node_obj[type].label) node_obj[type].label = type
+	
+				 delete(node_obj[type]['@cat'])
+				 if(!node_obj[type].id) {
+					if(node_obj[type]['@rid'])
+						node_obj[type].id = node_obj[type]['@rid'].replace('#','')
+					else if(vertex.r)
+						node_obj[type].id = vertex.r.replace('#','')
+					else 
+						console.log('WARNING: id not found')
+						console.log(vertex)
+				 }
+				 output.nodes.push(node_obj)
+				 vertex_ids[vertex.r] = type + ':' + node_obj[type].id
+			}
+		}
+
+		for(var edge of schemas.result.edges) {
+			
+			var to = vertex_ids[edge.i]
+			var from = vertex_ids[edge.o]
+			var edge_name = from + '->' + edge.t + '->' + to
+			if(!edge_ids[edge_name]) {
+				var edge_obj = {}
+				edge_obj[edge_name] = {attr: edge.p.attr}
+				output.edges.push(edge_obj)
+				edge_ids[edge_name] = edge_obj
+			}
+		}
+		const filePath = path.resolve('./graph', filename)
+		await fsPromises.writeFile(filePath, yaml.dump(output), 'utf8')
+		return {file: filePath}
 	}
 
 

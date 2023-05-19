@@ -21,7 +21,7 @@
     "koa-router": "^10.1.1",
     "koa-static": "^5.0.0",
     "multer": "^1.4.5-lts.1",
-    "sharp": "^0.31.2",
+    "sharp": "^0.32.0",
     "timers-promises": "^1.0.1",
     "winston": "^3.5.0",
     "winston-daily-rotate-file": "^4.6.0"
