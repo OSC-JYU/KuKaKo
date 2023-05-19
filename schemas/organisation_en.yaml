@@ -51,6 +51,8 @@ nodes:
       label: Process
   - Activity:
       label: Activity
+  - Topic:
+      label: Topic
   - Profession:
       label: Profession
 
@@ -126,3 +128,12 @@ edges:
   - Person:DEVELOPER_OF:Application:
       label: developer of
       label_rev: developers
+  - Person:PERFORMS_ACTIVITY:Activity:
+      label: performs
+      label_rev: performers
+  - Person:RESPONSIBLE_OF_TOPIC:Topic:
+      label: has responsibility
+      label_rev: has responsibility
+  - Person:EXPERT_ON_TOPIC:Topic:
+      label: is expert
+      label_rev: experts

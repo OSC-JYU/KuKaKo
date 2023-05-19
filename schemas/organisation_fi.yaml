@@ -50,6 +50,8 @@ nodes:
       label: prosessi
   - Activity:
       label: toiminto
+  - Topic:
+      label: Kokonaisuus
   - Profession:
       label: ammattinimike
   - Conversation:
@@ -58,43 +60,46 @@ nodes:
   - Channel:
       label: kanava
       URL: ''
+  - Organisation:
+      label: Organisaatio
+      URL: ''
 
 edges:
   - Person:IS_MEMBER_OF:Team:
-      label: on jäsen
+      label: olen jäsen
       label_rev: jäsenet
   - Person:FORM_MAINTAINER:Form:
-      label: ylläpitää
+      label: ylläpidän
       label_rev: ylläpitäjä
   - Person:FOLLOWS:EmailList:
-      label: seuraa
+      label: seuraan
       label_rev: on listalla
   - Person:KNOWS:Language:
       label: osaan
       label_rev: osaajat
   - Person:HAS_STUDIES_LANGUAGE:Language:
-      label: on opiskellut
+      label: olen opiskellut
       label_rev: ovat opiskelleet
   - Person:HAS_INTEREST_LANGUAGE:Language:
       label: haluaisin opiskella
       label_rev: kielestä kiinnostuneet
   - Person:CONTENT_MANAGER_OF:Site:
-      label: ylläpitää aineistoa
+      label: ylläpidän aineistoa
       label_rev: aineistoylläpitäjä
   - Person:TECHNICAL_MANAGER_OF:Site:
       label: tekninen ylläpitäjä
       label_rev: tekninen ylläpitäjä
   - Person:MAINTAINER_OF:Service:
-      label: ylläpitää
+      label: ylläpidän
       label_rev: ylläpitäjä
   - Person:MAIN_USER_OF:Service:
-      label: pääkäyttäjä
+      label: olen pääkäyttäjä
       label_rev: pääkäyttäjät
   - Person:USER_OF:Service:
-      label: käyttää
+      label: käytän
       label_rev: käyttäjät
   - Person:BELONGS_TO_HELPQUE:HelpDeskQue:
-      label: on jäsen
+      label: olen jäsen
       label_rev: jäsenet
   - Person:IS_MEMBER_OF_GROUP:WorkingGroup:
       label: kuulun
@@ -124,9 +129,25 @@ edges:
       label: ylläpidän
       label_rev: ylläpitäjät
   - Person:AUTHOR_OF_DOC:Webdoc:
-      label: tekijä
+      label: olen tekijä
       label_rev: tekijät
+  - Person:PERFORMS_ACTIVITY:Activity:
+      label: teen
+      label_rev: tekijät
+  - Person:RESPONSIBLE_OF_TOPIC:Topic:
+      label: vastaan
+      label_rev: vastaavat
+  - Person:EXPERT_ON_TOPIC:Topic:
+      label: olen asiantuntija
+      label_rev: asiantuntijat
 
+  - Person:CO-OPERATES_WITH_ORGANISATION:Organisation:
+      label: teen yhteistyötä
+      label_rev: yhteistyöorganisaatiot
+
+  - Topic:HAS_RELATED_TOPIC:Topic:
+      label: liittyy 
+      label_rev: liittyvät käsitteet
 
   - Device:HAS_MANUAL:Webdoc:
       label: ohje
