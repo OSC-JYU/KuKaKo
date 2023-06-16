@@ -7,15 +7,11 @@ const fsPromises = require('fs/promises')
 const schema = require("./schema.js")
 const web = require("./web.js")
 
-const MAX_STR_LENGTH = 2048
-const DB_HOST = process.env.ARCADEDB_HOST || 'http://localhost'
-const DB = process.env.ARCADEDB_DB || 'kukako'
-const PORT = process.env.ARCADEDB_PORT || 2480
-const URL = `${DB_HOST}:${PORT}/api/v1/command/${DB}`
 const timers = require('timers-promises')
 
 // some layouts are same for all users
 const COMMON_LAYOUTS = ['schema', 'navigation', 'about']
+const MAX_STR_LENGTH = 2048
 
 // Assigning to exports will not modify module, must use module.exports
 module.exports = class Graph {
@@ -23,7 +19,6 @@ module.exports = class Graph {
 	async initDB(docIndex) {
 		console.log(`ArcadeDB: ${web.getURL()}`)
 		console.log(`Checking database...`)
-		//let {setTimeout} = await import('timers/promises')
 		this.docIndex = docIndex
 		var query = 'MATCH (n:Schema) return n'
 		try {
@@ -38,7 +33,7 @@ module.exports = class Graph {
 				try {
 					await web.createDB()
 				} catch (e) {
-					console.log(`Could not init database. \nIs Arcadedb running at ${URL}?`)
+					console.log(`Could not init database. \nIs Arcadedb running at ${web.getURL()}?`)
 					throw('Could not init database. exiting...')
 				}
 			}
@@ -712,6 +707,7 @@ module.exports = class Graph {
 						id: ele.target['@rid'],
 						type: ele.target['@type'],
 						label: ele.target['label'],
+						label_rev: ele.target['label_rev'],
 						rel_id: ele.rel['@rid'],
 						rel_active: rel_active
 					}
@@ -720,6 +716,7 @@ module.exports = class Graph {
 						id: ele.target['@rid'],
 						type: ele.target['@type'],
 						label: ele.target['label'],
+						label_rev: ele.target['label_rev'],
 						rel_id: ele.rel['@rid'],
 						rel_active: rel_active
 					}
@@ -741,6 +738,10 @@ module.exports = class Graph {
 						label:'default',
 						count: 0
 					},
+					default_group: {
+						label: 'relations',
+						count: 0
+					}
 				}
 			}
 			var default_group = []
@@ -764,15 +765,17 @@ module.exports = class Graph {
 					// if tag was found but empty, then push to default group
 					} else {
 						default_group.push(relation)
+						out.tags.default_group.count + relation.data.length
 					}
 
 					// if no tag found, then push to default group
 				} else {
 					default_group.push(relation)
 				}
+				
 
 			}
-			out.tags.default_group = {relations:default_group, label:'Relations'}
+			out.tags.default_group.relations = default_group
 			return out
 		} else {
 			return schemas

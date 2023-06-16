@@ -113,7 +113,7 @@ If you have NodeJS installed, you can run KuKaKo directly on NodeJS (for develop
 	git clone https://github.com/OSC-JYU/KuKaKo.git
 	cd kukako
 	npm install
-	MODE=development ARCADEDB_PASSWORD=node_master node index.js
+	MODE=development DB_PASSWORD=node_master node index.js
 
 
 # FAQ

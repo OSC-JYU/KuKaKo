@@ -33,6 +33,7 @@ schema.getSchema = async function(label) {
 			out.push({
 				type:schema.rel['@type'],
 				label: schema.rel['label_rev'],
+				label_rev: schema.rel['label'],
 				target: schema.t['_type'],
 				target_label: schema['label'],
 				target_publicity: schema.t['_public'],

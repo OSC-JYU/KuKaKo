@@ -141,7 +141,7 @@ edges:
       label: olen asiantuntija
       label_rev: asiantuntijat
 
-  - Person:CO-OPERATES_WITH_ORGANISATION:Organisation:
+  - Person:CO_OPERATES_WITH_ORGANISATION:Organisation:
       label: teen yhteistyötä
       label_rev: yhteistyöorganisaatiot
 

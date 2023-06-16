@@ -25,9 +25,9 @@ services:
     ports:
      - "8100:8100"
     environment:
-     - ARCADEDB_HOST=http://arcadedb
-     - ARCADEDB_DB=kukako
-     - ARCADEDB_PASSWORD=node_master
+     - DB_HOST=http://arcadedb
+     - DB_NAME=kukako
+     - DB_PASSWORD=node_master
      - MODE=development
 
 networks:

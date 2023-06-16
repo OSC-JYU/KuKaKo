@@ -1,12 +1,12 @@
 const axios = require("axios")
 
 const username = 'root'
-const password = process.env.ARCADEDB_PASSWORD
+const password = process.env.DB_PASSWORD
 
 const MAX_STR_LENGTH = 2048
-const DB_HOST = process.env.ARCADEDB_HOST || 'http://localhost'
-const DB = process.env.ARCADEDB_DB || 'kukako'
-const PORT = process.env.ARCADEDB_PORT || 2480
+const DB_HOST = process.env.DB_HOST || 'http://localhost'
+const DB = process.env.DB_NAME || 'kukako'
+const PORT = process.env.DB_PORT || 2480
 const URL = `${DB_HOST}:${PORT}/api/v1/command/${DB}`
 
 let web = {}
@@ -16,14 +16,14 @@ web.getURL = function() {
 }
 
 web.createDB = async function() {
-	url = URL.replace('/command/', '/create/')
+	url = URL.replace(`/command/${DB}`, '/server')
 	var config = {
 		auth: {
 			username: username,
 			password: password
 		}
 	};
-	return axios.post(url, {}, config)
+	return axios.post(url, {command: `create database ${DB}`}, config)
 }
 
 web.createVertexType = async function(type) {
