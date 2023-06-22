@@ -599,7 +599,7 @@ module.exports = class Graph {
 
 
 	async getTags() {
-		var query = 'MATCH (t:Tag) RETURN t order by t.label'
+		var query = 'MATCH (t:Tag) RETURN t order by t.id'
 		return await web.cypher( query)
 	}
 
@@ -683,8 +683,8 @@ module.exports = class Graph {
 	}
 
 
-	async getDataWithSchema(rid, by_groups) {
-		by_groups = 1
+	async getDataWithSchema(rid, by_tags) {
+		by_tags = 1
 
 		if(!rid.match(/^#/)) rid = '#' + rid
 		var data = await web.cypher( `MATCH (source) WHERE id(source) = "${rid}" OPTIONAL MATCH (source)-[rel]-(target)  return source, rel, target ORDER by target.label`)
@@ -728,27 +728,36 @@ module.exports = class Graph {
 			})
 		}
 
-		if(by_groups) {
+		if(by_tags) {
 			const tags = await this.getTags()
 			var out = {
 				_attributes: data.result[0].source,
-				tags: {
-					default_display: {
-						relations:[],
-						label:'default',
-						count: 0
-					},
-					default_group: {
-						label: 'relations',
-						count: 0
-					}
+				tags: {}
+			}
+			for(var tag of tags.result) {
+				var tag_label = tag.label ? tag.label : tag.id
+				out.tags[tag.id] = {
+					relations:[],
+					label: tag_label,
+					count: 0
 				}
 			}
-			var default_group = []
+
+			var default_group = {
+				relations:[],
+				label: 'misc',
+				count: 0
+			}
+			var default_display = {
+				relations:[],
+				label:'default',
+				count: 0
+			}
+
 			for(var relation of schemas) {
 				if(relation.display && relation.display == 'default') {
-					out.tags.default_display.relations.push(relation)
-					out.tags.default_display.count = out.tags.default_display.count + relation.data.length
+					default_display.relations.push(relation)
+					default_display.count = default_display.count + relation.data.length
 				} else if(relation.tags) {
 					if (Array.isArray(relation.tags) && relation.tags.length > 0) {
 						var tag = tags.result.find(x => relation.tags.includes(x.id))
@@ -764,18 +773,19 @@ module.exports = class Graph {
 						out.tags[relation.tags].count = out.tags[relation.tags].count + relation.data.length
 					// if tag was found but empty, then push to default group
 					} else {
-						default_group.push(relation)
-						out.tags.default_group.count + relation.data.length
+						default_group.relations.push(relation)
+						default_group.count = default_group.count + relation.data.length
 					}
 
 					// if no tag found, then push to default group
 				} else {
-					default_group.push(relation)
+					default_group.relations.push(relation)
+					default_group.count = default_group.count + relation.data.length
 				}
 				
 
 			}
-			out.tags.default_group.relations = default_group
+			out.tags.default_group = default_group
 			return out
 		} else {
 			return schemas
