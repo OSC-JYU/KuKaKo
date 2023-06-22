@@ -1,4 +1,3 @@
-const axios = require("axios")
 const path = require('path')
 const JSON5 = require('json5')
 const yaml = require('js-yaml')
@@ -26,6 +25,7 @@ module.exports = class Graph {
 		} catch (e) {
 			try {
 				console.log('Database not found, creating...')
+				console.log(e)
 				await web.createDB()
 			} catch (e) {
 				console.log(`Could not init database. \nTrying again in 10 secs...`)
@@ -46,7 +46,9 @@ module.exports = class Graph {
 		try {
 			// database exist, make sure that some base types are present
 			await web.createVertexType('Schema')
+			console.log('--')
 			await web.createVertexType('Person')
+			console.log('--')
 			await web.createVertexType('UserGroup')
 			await web.createVertexType('Menu')
 			await web.createVertexType('Query')

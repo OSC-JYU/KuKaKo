@@ -1,4 +1,3 @@
-const axios = require("axios")
 const path = require('path')
 const JSON5 = require('json5')
 const yaml = require('js-yaml')

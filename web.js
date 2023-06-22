@@ -1,4 +1,3 @@
-const axios = require("axios")
 
 const username = 'root'
 const password = process.env.DB_PASSWORD
@@ -16,14 +15,22 @@ web.getURL = function() {
 }
 
 web.createDB = async function() {
-	url = URL.replace(`/command/${DB}`, '/server')
-	var config = {
-		auth: {
-			username: username,
-			password: password
+	const { default: got } = await import('got');
+	var url = URL.replace(`/command/${DB}`, '/server')
+	var data = {
+		username: username,
+		password: password,
+		json: {
+			command: `create database ${DB}`
 		}
 	};
-	return axios.post(url, {command: `create database ${DB}`}, config)
+
+	try {
+		await got.post(url, data)
+	} catch(e) {
+		console.log(e.message)
+		throw({message: "Database creation failed"})
+	}
 }
 
 web.createVertexType = async function(type) {
@@ -31,69 +38,74 @@ web.createVertexType = async function(type) {
 	try {
 		await this.sql(query)
 	} catch (e) {
-		//console.log(e.message)
+		console.log(e.message)
 		//console.log(`${type} exists`)
 	}
 }
 
 web.sql = async function(query, options) {
-	var config = {
-		auth: {
-			username: username,
-			password: password
+
+	const { default: got } = await import('got');
+
+	var data = {
+		username: username,
+		password: password,
+		json: {
+			command:query,
+			language:'sql'
 		}
 	};
-	const query_data = {
-		command:query,
-		language:'sql'
-	}
-	var response = await axios.post(URL, query_data, config)
-	return response.data
+	var response = await got.post(URL, data).json()
+	return response
 }
 
 web.cypher = async function(query, options, no_console) {
 
+	const { default: got } = await import('got');
+
 	if(!options) var options = {}
 	if(options.current && !options.current.includes('#')) options.current = '#' + options.current
 
-	var config = {
-		auth: {
-			username: username,
-			password: password
+	var data = {
+		username: username,
+		password: password,
+		json: {
+			command:query,
+			language:'cypher'
 		}
 	};
-	const query_data = {
-		command:query,
-		language:'cypher'
-	}
-	if(options.serializer) query_data.serializer = options.serializer
+
+	if(options.serializer) data.json.serializer = options.serializer
 	if(!no_console) console.log(query)
 
 	try {
-		var response = await axios.post(URL, query_data, config)
-		if(query && query.toLowerCase().includes('create')) return response.data
-		else if(!options.serializer) return response.data
+		var response = await got.post(URL, data).json()
+		if(query && query.toLowerCase().includes('create')) return response
+		else if(!options.serializer) return response
 		else if(options.serializer == 'graph' && options.format == 'cytoscape') {
-			options.labels = await getSchemaLabels(config)
-			return convert2CytoScapeJs(response.data, options)
+			options.labels = await getSchemaLabels(data)
+			return convert2CytoScapeJs(response, options)
 		} else {
-			return response.data
+			return response
 		}
 	} catch(e) {
-		console.log(e)
-		throw({msg: 'error in query', query: query, error: e})
+		console.log(e.message)
+		throw({message: e.message})
 	}
 }
 
-async function getSchemaLabels(config) {
+async function getSchemaLabels(data) {
+
+	const { default: got } = await import('got');
+
 	const query = "MATCH (s:Schema)  RETURN COALESCE(s.label, s._type)  as label, s._type as type"
-	const query_data = {
+	data.json = {
 		command:query,
 		language:'cypher'
 	}
 	try {
-		var response = await axios.post(URL, query_data, config)
-		var labels = response.data.result.reduce(
+		var response = await got.post(URL, data).json()
+		var labels = response.result.reduce(
 			(obj, item) => Object.assign(obj, { [item.type]: item.label }), {});
 		return labels
 	} catch(e) {
