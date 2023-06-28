@@ -24,7 +24,9 @@ web.createDB = async function() {
 			command: `create database ${DB}`
 		}
 	};
-
+console.log(url)
+console.log(data)
+console.log(process.env.DB_HOST)
 	try {
 		await got.post(url, data)
 	} catch(e) {

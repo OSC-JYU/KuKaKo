@@ -85,6 +85,8 @@ Click main header ("KuKaKo") and click pencil icon. Now you should see all the t
 
 Try to create a Team for you. Click line "member of (Team)" and click + icon. Now you can create a Team and you are automatically linked to it.
 
+NOTE: This works because you have admin rights in development node. 
+
 ### Styles
 
 You'll soon notice that your graph looks boring. Import some style from "admin" -> "import style" -> "organisation.json" -> "DELETE ALL and import". Reload page and you should have much nicer looking graph!

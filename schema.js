@@ -8,7 +8,7 @@ const web = require("./web.js")
 
 let schema = {}
 
-schema.getSchema = async function(label) {
+schema.getSchemaRelations = async function(label) {
 	var query = ''
 	if(label)
 		query = `MATCH (s:Schema {_type:"${label}"}) -[rel]- (t:Schema) RETURN s, rel ,t, COALESCE(t.label, t._type) as label ORDER by rel.display DESC`
