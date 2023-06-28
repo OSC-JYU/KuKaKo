@@ -578,7 +578,7 @@ module.exports = class Graph {
 			var edge_name = from + '->' + edge.t + '->' + to
 			if(!edge_ids[edge_name]) {
 				var edge_obj = {}
-				edge_obj[edge_name] = {attr: edge.p.attr}
+				edge_obj[edge_name] = {attr: edge.p.attr, tags: edge.p.tags}
 				output.edges.push(edge_obj)
 				edge_ids[edge_name] = edge_obj
 			}
@@ -664,8 +664,10 @@ module.exports = class Graph {
 
 		} else {
 			if(!rid.match(/^#/)) rid = '#' + rid
-			filename = `layout_${rid}-${me.rid}.json`
+			if(me.rid === rid) filename = `layout_${rid}-${me.rid}.json`
+			else filename = `layout_${rid}-${rid}.json`
 		}
+
 		try {
 			const filePath = path.resolve('./layouts', filename)
 			var locations = await fsPromises.readFile(filePath, 'utf8')

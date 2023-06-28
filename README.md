@@ -3,6 +3,9 @@
 KuKaKo is a visual, open source tool for
 communicating (sometimes messy) connections between people and things in community.
 
+
+![user's homepage](https://github.com/OSC-JYU/KuKaKo/blob/master/docs/main.png)
+
 - KuKaKo is cute, simple and very human centric!
 - Very flexible, visual schema  
 - Visual graph view can be re-arranged by user per query or node view
