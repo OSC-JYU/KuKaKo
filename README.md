@@ -115,6 +115,12 @@ Also note that the same header is used for 'id' of Person nodes.
 
 If you have NodeJS installed, you can run KuKaKo directly on NodeJS (for development).
 
+First start Arcadedb:
+
+	docker run --rm -p 2480:2480 -p 2424:2424 -v kukako_arcade:/home/arcadedb/databases  -e JAVA_OPTS="-Darcadedb.server.rootPassword=node_master" arcadedata/arcadedb:23.5.1
+
+Then clone KuKako repository and start it:
+
 	git clone https://github.com/OSC-JYU/KuKaKo.git
 	cd kukako
 	npm install

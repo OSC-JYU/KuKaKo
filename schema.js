@@ -11,7 +11,7 @@ let schema = {}
 schema.getSchemaRelations = async function(label) {
 	var query = ''
 	if(label)
-		query = `MATCH (s:Schema {_type:"${label}"}) -[rel]- (t:Schema) RETURN s, rel ,t, COALESCE(t.label, t._type) as label ORDER by rel.display DESC`
+		query = `MATCH (s:Schema {_type:"${label}"}) -[rel]- (t:Schema) RETURN s, rel ,t, COALESCE(t.label, t._type) as label ORDER by label`
 	else
 		query = `MATCH (s:Schema ) -[rel]-(t:Schema) RETURN s, rel, t`
 	var result = await web.cypher(query)

@@ -1,7 +1,7 @@
 IMAGES := $(shell docker images -f "dangling=true" -q)
 CONTAINERS := $(shell docker ps -a -q -f status=exited)
 VOLUME := kukako-data
-VERSION := 0.1
+VERSION := 0.1f
 
 
 clean:
@@ -12,13 +12,7 @@ create_volume:
 	docker volume create $(VOLUME)
 
 build:
-	docker build -t osc.repo.kopla.jyu.fi/arihayri/kukako:$(VERSION) .
-
-push:
-	docker push osc.repo.kopla.jyu.fi/arihayri/kukako:$(VERSION)
-
-pull:
-	docker pull osc.repo.kopla.jyu.fi/arihayri/kukako:$(VERSION)
+	docker build -t osc.jyu.fi/kukako:$(VERSION) .
 
 start:
 	docker run -d --name kukako \
@@ -30,7 +24,8 @@ start:
 		-e MODE=development \
 		--network arcadedb-net \
 		--restart unless-stopped \
-		osc.repo.kopla.jyu.fi/arihayri/kukako:$(VERSION)
+		osc.jyu.fi/kukako:$(VERSION)
+
 restart:
 	docker stop kukako
 	docker rm kukako

@@ -46,9 +46,7 @@ module.exports = class Graph {
 		try {
 			// database exist, make sure that some base types are present
 			await web.createVertexType('Schema')
-			console.log('--')
 			await web.createVertexType('Person')
-			console.log('--')
 			await web.createVertexType('UserGroup')
 			await web.createVertexType('Menu')
 			await web.createVertexType('Query')
@@ -694,14 +692,17 @@ module.exports = class Graph {
 		var data = await web.cypher( `MATCH (source) WHERE id(source) = "${rid}" OPTIONAL MATCH (source)-[rel]-(target)  return source, rel, target ORDER by target.label`)
 		if(data.result.length == 0) return []
 
-
 		var type = data.result[0].source['@type']
 		data.result[0].source = await schema.getSchemaAttributes(type, data.result[0].source)
-		//var att = await this.getNodeAttributes(rid)
-		var schemas = await schema.getSchema(type)
+		var relations = await schema.getSchemaRelations(type)
 
-		for(var schema_item of schemas) {
-			schema_item.data = data.result.filter(ele => ele.rel['@type'] == schema_item.type).map(ele => {
+
+		// add every existing relationship as "data" under relation in schema
+		for(var relation of relations) {
+			
+			relation.data = data.result.filter(ele => {
+				if(ele.rel && ele.rel['@type'] == relation.type) return ele
+			}).map(ele => {
 				var out = {}
 				var rel_active = ele.rel._active
 				if(typeof ele.rel._active === 'undefined') rel_active = true
@@ -726,12 +727,13 @@ module.exports = class Graph {
 					}
 				}
 				if(ele.rel['attr']) out.rel_attr = ele.rel['attr']
-				if(ele.rel['x']) out.rel_x = ele.rel['x']
-				if(ele.rel['y']) out.rel_y = ele.rel['y']
+
 				return out
 			})
+			
 		}
 
+		// group schema relations (and relation data) under tags
 		if(by_tags) {
 			const tags = await this.getTags()
 			var out = {
@@ -758,7 +760,7 @@ module.exports = class Graph {
 				count: 0
 			}
 
-			for(var relation of schemas) {
+			for(var relation of relations) {
 				if(relation.display && relation.display == 'default') {
 					default_display.relations.push(relation)
 					default_display.count = default_display.count + relation.data.length
@@ -792,7 +794,7 @@ module.exports = class Graph {
 			out.tags.default_group = default_group
 			return out
 		} else {
-			return schemas
+			return relations
 		}
 	}
 }

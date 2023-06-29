@@ -62,6 +62,7 @@ edges:
   - Person:IS_MEMBER_OF_TEAM:Team:
       label: member of
       label_rev: members
+      tags: ['organisation']
   - Person:FORM_MAINTAINER:Form:
       label: maintainer of
       label_rev: maintainers

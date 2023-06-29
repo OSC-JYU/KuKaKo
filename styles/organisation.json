@@ -3,7 +3,7 @@
 	{
 		"selector": "node[type='empty']",
 		"style": {
-			"content": "ei tuloksia",
+			"content": "none",
 			"color":"white",
 			"background-color": "#1C86AA"
 		}
