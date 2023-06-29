@@ -5,7 +5,7 @@ nodes:
   - Form:
       label: lomake
   - Person:
-      label: Henkilö
+      label: henkilö
       id: text
   - EmailList:
       label: sähköpostilista
@@ -18,7 +18,7 @@ nodes:
       label: järjestelmä
       URL: ''
   - TicketQue:
-      label: HelpJYU
+      label: helpJYU
   - Team:
       label: tiimi
   - WorkingGroup:
@@ -26,12 +26,12 @@ nodes:
   - QueryMap:
       image: ''
       scale: ''
-      label: Kartta
+      label: kartta
   - Project:
       label: projekti
-  - TV_sarja:
+  - TV_serie:
       _public: true
-      label: TV_sarja
+      label: tv-sarja
   - Device:
       label: laite
   - Room:
@@ -51,7 +51,7 @@ nodes:
   - Activity:
       label: toiminto
   - Topic:
-      label: Kokonaisuus
+      label: kokonaisuus
   - Profession:
       label: ammattinimike
   - Conversation:
@@ -61,7 +61,7 @@ nodes:
       label: kanava
       URL: ''
   - Organisation:
-      label: Organisaatio
+      label: organisaatio
       URL: ''
 
 edges:
