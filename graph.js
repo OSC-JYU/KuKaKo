@@ -698,12 +698,8 @@ module.exports = class Graph {
 
 
 		// add every existing relationship as "data" under relation in schema
-		console.log(data.result)
 		for(var relation of relations) {
-			console.log(relation)
-			console.log('-----')
-			var edge_id = ''
-			
+
 			//data.result.forEach(x => console.log(`${type}:${x.rel['@type']}:${x.target['@type']}`))
 			relation.data = data.result.filter(ele => {
 				if(ele.rel && ele.rel['@type'] == relation.type) {

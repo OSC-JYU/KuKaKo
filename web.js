@@ -125,7 +125,7 @@ function setParent(vertices, child, parent) {
 }
 
 // group relations by their type if count > grouping threshold 
-function nodeGrouping(nodes, edges) {
+function nodeGrouping(nodes, edges, vertex_types) {
 	var unique_links = {}
 	var cluster_types = {}
 	var cluster_nodes = []
@@ -139,13 +139,15 @@ function nodeGrouping(nodes, edges) {
 
 
 	for(var edge of edges) {
-		var cluster_id = edge.data.source + '__' + edge.data.type
+		var cluster_id = edge.data.source + '__' + edge.data.type + '__' + vertex_types[edge.data.target]
 		if(unique_links[cluster_id]) {
 			unique_links[cluster_id].push(edge.data.target)
 		} else {
 			unique_links[cluster_id] = [edge.data.target]
 		}
 	}
+	console.log(unique_links)
+	console.log(vertex_types)
 
 	for(var cluster_id in unique_links) {
 		if(unique_links[cluster_id].length > GROUP_THRESHOLD) {
@@ -154,7 +156,7 @@ function nodeGrouping(nodes, edges) {
 			var rel = splitted[1]
 			clustered_links.push(cluster_id)
 
-			cluster_nodes.push({data: {name: cluster_id, type_label: 'Cluster', id: cluster_id, type:'Cluster', width:100, active:true}})
+			cluster_nodes.push({data: {name: unique_links[cluster_id].length, type_label: 'Cluster', id: cluster_id, type:'Cluster', width:100, active:true}})
 			cluster_edges.push({data: {label: rel, source: source, target: cluster_id, active: true}})
 		}
 	}
@@ -271,6 +273,7 @@ function convert2CytoScapeJs(data, options) {
 				// add relationship labels to graph from schema relations
 				if(options.schemas) {
 					var edge_id = `${vertex_types[edge.data.source]}:${v.t}:${vertex_types[edge.data.target]}`
+
 					if(options.schemas[edge_id]) {
 						if(options.schemas[edge_id].label) {
 							if(edge.data.active) {
@@ -302,9 +305,10 @@ function convert2CytoScapeJs(data, options) {
 		}
 	}
 
+	// group only if we are on homepage
 	if(options.current) {
 		//return {nodes:nodes, edges: edges}
-		var grouped = nodeGrouping(nodes, edges)
+		var grouped = nodeGrouping(nodes, edges, vertex_types)
 		return {nodes:grouped.nodes, edges: grouped.edges}
 	} else {
 		return {nodes:nodes, edges: edges}
