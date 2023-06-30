@@ -314,7 +314,7 @@ module.exports = class Graph {
 		var schema_relations = {}
 		var schemas = await web.cypher( 'MATCH (s:Schema)-[r]->(s2:Schema) return type(r) as type, r.label as label, r.label_rev as label_rev, COALESCE(r.label_inactive, r.label) as label_inactive, s._type as from, s2._type as to, r.tags as tags, r.compound as compound')
 		schemas.result.forEach(x => {
-			schema_relations[x.type] = x
+			schema_relations[`${x.from}:${x.type}:${x.to}`] = x
 		})
 		return schema_relations
 	}
@@ -698,17 +698,26 @@ module.exports = class Graph {
 
 
 		// add every existing relationship as "data" under relation in schema
+		console.log(data.result)
 		for(var relation of relations) {
+			console.log(relation)
+			console.log('-----')
+			var edge_id = ''
 			
+			//data.result.forEach(x => console.log(`${type}:${x.rel['@type']}:${x.target['@type']}`))
 			relation.data = data.result.filter(ele => {
-				if(ele.rel && ele.rel['@type'] == relation.type) return ele
+				if(ele.rel && ele.rel['@type'] == relation.type) {
+					// we know that relation *source* is 'data.result[0].source['@type']'
+					// so not need to test it
+					if(relation.target == ele.target['@type'])
+					 	return ele
+				}
+				
 			}).map(ele => {
-				var out = {}
 				var rel_active = ele.rel._active
 				if(typeof ele.rel._active === 'undefined') rel_active = true
 				if(!ele.target._active) rel_active = false
-				if(ele.rel['@out'] == ele.source['@rid'])
-					out=  {
+				var out = {
 						id: ele.target['@rid'],
 						type: ele.target['@type'],
 						label: ele.target['label'],
@@ -716,16 +725,7 @@ module.exports = class Graph {
 						rel_id: ele.rel['@rid'],
 						rel_active: rel_active
 					}
-				else {
-					out =  {
-						id: ele.target['@rid'],
-						type: ele.target['@type'],
-						label: ele.target['label'],
-						label_rev: ele.target['label_rev'],
-						rel_id: ele.rel['@rid'],
-						rel_active: rel_active
-					}
-				}
+
 				if(ele.rel['attr']) out.rel_attr = ele.rel['attr']
 
 				return out
@@ -792,6 +792,7 @@ module.exports = class Graph {
 
 			}
 			out.tags.default_group = default_group
+
 			return out
 		} else {
 			return relations

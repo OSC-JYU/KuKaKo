@@ -7,6 +7,7 @@ const DB_HOST = process.env.DB_HOST || 'http://localhost'
 const DB = process.env.DB_NAME || 'kukako'
 const PORT = process.env.DB_PORT || 2480
 const URL = `${DB_HOST}:${PORT}/api/v1/command/${DB}`
+const GROUP_THRESHOLD = process.env.GROUP_THRESHOLD || 5
 
 let web = {}
 
@@ -24,9 +25,7 @@ web.createDB = async function() {
 			command: `create database ${DB}`
 		}
 	};
-console.log(url)
-console.log(data)
-console.log(process.env.DB_HOST)
+
 	try {
 		await got.post(url, data)
 	} catch(e) {
@@ -85,7 +84,7 @@ web.cypher = async function(query, options, no_console) {
 		if(query && query.toLowerCase().includes('create')) return response
 		else if(!options.serializer) return response
 		else if(options.serializer == 'graph' && options.format == 'cytoscape') {
-			options.labels = await getSchemaLabels(data)
+			options.labels = await getSchemaVertexLabels(data)
 			return convert2CytoScapeJs(response, options)
 		} else {
 			return response
@@ -96,7 +95,7 @@ web.cypher = async function(query, options, no_console) {
 	}
 }
 
-async function getSchemaLabels(data) {
+async function getSchemaVertexLabels(data) {
 
 	const { default: got } = await import('got');
 
@@ -125,8 +124,8 @@ function setParent(vertices, child, parent) {
 	}
 }
 
-// not really clustering, more like auto-compound
-function cluster(nodes, edges) {
+// group relations by their type if count > grouping threshold 
+function nodeGrouping(nodes, edges) {
 	var unique_links = {}
 	var cluster_types = {}
 	var cluster_nodes = []
@@ -149,7 +148,7 @@ function cluster(nodes, edges) {
 	}
 
 	for(var cluster_id in unique_links) {
-		if(unique_links[cluster_id].length > 10) {
+		if(unique_links[cluster_id].length > GROUP_THRESHOLD) {
 			var splitted = cluster_id.split('__')
 			var source = splitted[0]
 			var rel = splitted[1]
@@ -182,7 +181,6 @@ function cluster(nodes, edges) {
 			var source = splitted[0]
 			var rel = splitted[1]
 			if(unique_links[cluster_id].includes(node.data.id)) {
-				console.log(cluster_id)
 				node.data.parent = cluster_id
 			}
 		}
@@ -213,6 +211,7 @@ function convert2CytoScapeJs(data, options) {
 	var vertex_ids = []
 	var nodes = []
 	var inactive_nodes = []
+	var vertex_types = {}
 
 	if(data.result.vertices) {
 		for(var v of data.result.vertices) {
@@ -231,6 +230,7 @@ function convert2CytoScapeJs(data, options) {
 						}
 					}
 				} else {
+					vertex_types[v.r] = v.t
 					node = {
 						data:{
 							id:v.r,
@@ -268,20 +268,21 @@ function convert2CytoScapeJs(data, options) {
 				if(inactive_nodes.includes(edge.data.source) || inactive_nodes.includes(edge.data.target))
 					edge.data.active = false
 
-				// add relationship labels to graph from schema
+				// add relationship labels to graph from schema relations
 				if(options.schemas) {
-					if(options.schemas[v.t]) {
-						if(options.schemas[edge.data.label].label) {
+					var edge_id = `${vertex_types[edge.data.source]}:${v.t}:${vertex_types[edge.data.target]}`
+					if(options.schemas[edge_id]) {
+						if(options.schemas[edge_id].label) {
 							if(edge.data.active) {
-								edge.data.label = options.schemas[edge.data.label].label.toUpperCase()
+								edge.data.label = options.schemas[edge_id].label.toUpperCase()
 							} else {
-								edge.data.label = options.schemas[edge.data.label].label_inactive
+								edge.data.label = options.schemas[edge_id].label_inactive
 							}
 						} else {
 							edge.data.label = edge.data.label
 						}
-						if(options.schemas[v.t].compound === true) {
-							console.log('***************** COMPoUND ***************\n\n')
+
+						if(options.schemas[edge_id].compound === true) {
 							if(options.current == v.o)
 								edges.push(edge)
 							else
@@ -289,19 +290,22 @@ function convert2CytoScapeJs(data, options) {
 						} else {
 							edges.push(edge)
 						}
+
 					} else {
 						edges.push(edge)
 					}
 				} else {
 					edges.push(edge)
 				}
+
 			}
 		}
 	}
+
 	if(options.current) {
 		//return {nodes:nodes, edges: edges}
-		var clustered = cluster(nodes, edges)
-		return {nodes:clustered.nodes, edges: clustered.edges}
+		var grouped = nodeGrouping(nodes, edges)
+		return {nodes:grouped.nodes, edges: grouped.edges}
 	} else {
 		return {nodes:nodes, edges: edges}
 	}

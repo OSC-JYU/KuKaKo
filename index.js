@@ -89,7 +89,7 @@ const upload = multer({
 
 // check that user has rights to use app
 app.use(async function handleError(context, next) {
-	if(process.env.MODE == 'development') context.request.headers[AUTH_HEADER] = "local.user@localhost" // dummy shibboleth for local use
+	if(process.env.MODE == 'development' && process.env.DEV_USER) context.request.headers[AUTH_HEADER] = process.env.DEV_USER // dummy shibboleth for local use
 
 	if(process.env.CREATE_USERS_ON_THE_FLY == 1) {
 		await next()
