@@ -332,6 +332,11 @@ router.get('/api/layouts/:rid', async function (ctx) {
 	ctx.body = n
 })
 
+router.get('/api/stories/:rid', async function (ctx) {
+	var n = await graph.getStory(ctx.request.params.rid)
+	ctx.body = n
+})
+
 router.get('/api/documents', async function (ctx) {
 	var n = await graph.getListByType(ctx.request.query)
 	ctx.body = n

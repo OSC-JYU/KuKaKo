@@ -462,6 +462,26 @@ module.exports = class Graph {
 	}
 
 
+	async getStory(rid) {
+		if(!rid.match(/^#/)) rid = '#' + rid
+		var query = `MATCH (s:Story) WHERE id(s) = '${rid}' RETURN s`
+		var result = await web.cypher( query)
+
+		if(result.result.length == 1) {
+			var filename = 'story_' + rid + '.yaml'
+			try {
+				const file_path = path.resolve('./stories', filename)
+				const data = await fsPromises.readFile(file_path, 'utf8')
+				const story_data = yaml.load(data)
+				return story_data
+			} catch (e) {
+				throw(e)
+			}
+		} else {
+			throw('Not found')
+		}
+	}
+
 	async importGraphYAML(filename, mode) {
 		console.log(`** importing graph ${filename} with mode ${mode} **`)
 		try {
