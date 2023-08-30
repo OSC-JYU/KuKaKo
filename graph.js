@@ -628,28 +628,34 @@ module.exports = class Graph {
 
 
 	async setLayout(body, me) {
-		
+
 		var query = ''
 		var filename = ''
 		if(!body.target || !body.data) throw('data missing')
 
-		var for_cypher = {}
-		for(var id in body.data) {
-			var id_clean = id.replace('#', 'node').replace(':','_')
-			for_cypher[id_clean] = body.data[id]
-		}
-		var as_string = JSON5.stringify(for_cypher)
-
-		if(COMMON_LAYOUTS .includes(body.target)) {
-			filename = `layout_${body.target}-${body.target}.json`
-			
+		// admins can save common layouts (like schema) and any users layout
+		if(me.access == 'admin') {
+			if(COMMON_LAYOUTS.includes(body.target)) {
+				filename = `layout_${body.target}-${body.target}.json`
+				
+			} else {
+				if(!body.target.match(/^#/)) body.target = '#' + body.target
+				filename = `layout_${body.target}-${body.target}.json`
+			}
+		// other users can save only their own layout
 		} else {
 			if(!body.target.match(/^#/)) body.target = '#' + body.target
-			filename = `layout_${body.target}-${me.rid}.json`
+			if(body.target == me.rid)
+				filename = `layout_${body.target}-${me.rid}.json`
+			else
+				throw('No permissions')
 		}
 
-		const filePath = path.resolve('./layouts', filename)
-		await fsPromises.writeFile(filePath, JSON.stringify(body.data), 'utf8')
+		if(filename) {
+			const filePath = path.resolve('./layouts', filename)
+			await fsPromises.writeFile(filePath, JSON.stringify(body.data), 'utf8')
+		}
+
 	
 	}
 

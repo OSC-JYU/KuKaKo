@@ -7,7 +7,7 @@ const DB_HOST = process.env.DB_HOST || 'http://localhost'
 const DB = process.env.DB_NAME || 'kukako'
 const PORT = process.env.DB_PORT || 2480
 const URL = `${DB_HOST}:${PORT}/api/v1/command/${DB}`
-const GROUP_THRESHOLD = process.env.GROUP_THRESHOLD || 5
+const GROUP_THRESHOLD = process.env.GROUP_THRESHOLD || 1
 
 let web = {}
 
