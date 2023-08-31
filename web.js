@@ -125,7 +125,8 @@ function setParent(vertices, child, parent) {
 }
 
 // group relations by their type if count > grouping threshold 
-function nodeGrouping(nodes, edges, vertex_types) {
+// this groups relations only for one "central node" (homepage of person)
+function nodeGrouping(nodes, edges, vertex_types, options) {
 	var unique_links = {}
 	var cluster_types = {}
 	var cluster_nodes = []
@@ -139,6 +140,10 @@ function nodeGrouping(nodes, edges, vertex_types) {
 
 
 	for(var edge of edges) {
+		console.log('****************************')
+		console.log(edge)
+		console.log('****************************')
+		//console.log(options)
 		var cluster_id = edge.data.source + '__' + edge.data.type + '__' + vertex_types[edge.data.target]
 		if(unique_links[cluster_id]) {
 			unique_links[cluster_id].push(edge.data.target)
@@ -154,10 +159,20 @@ function nodeGrouping(nodes, edges, vertex_types) {
 			var splitted = cluster_id.split('__')
 			var source = splitted[0]
 			var rel = splitted[1]
+			var target = splitted[2]
 			clustered_links.push(cluster_id)
 
-			cluster_nodes.push({data: {name: unique_links[cluster_id].length, type_label: 'Cluster', id: cluster_id, type:'Cluster', width:100, active:true}})
-			cluster_edges.push({data: {label: rel, source: source, target: cluster_id, active: true}})
+			var schema_id = `Person:${rel}:${target}`
+			var cluster_label = rel
+			if(options.schemas[schema_id]) {
+				cluster_label = options.schemas[schema_id].label
+			}
+			
+			// add cluster node
+			cluster_nodes.push({data: {name: cluster_label, type_label: 'Cluster', id: cluster_id, type:'Cluster', width:100, active:true}})
+
+			// add link from "central node" to cluster node
+			//cluster_edges.push({data: {label: '', source: source, target: cluster_id, active: true}})
 		}
 	}
 
@@ -176,18 +191,31 @@ function nodeGrouping(nodes, edges, vertex_types) {
 		if(!found) return edge
 	})
 
+	var multiples = []
+
 	// add parent to Cluster node to all clustered notes
 	clustered_nodes = nodes.filter(node => {
+		var count = 0
 		for(var cluster_id of clustered_links) {
-			var splitted = cluster_id.split('__')
-			var source = splitted[0]
-			var rel = splitted[1]
 			if(unique_links[cluster_id].includes(node.data.id)) {
-				node.data.parent = cluster_id
+				// create copies of nodes that are on multiple clusters
+				if(node.data.parent) {
+					const clone = JSON.parse(JSON.stringify(node))
+					clone.data.id = clone.data.id + '_' + count
+					clone.data.parent = cluster_id
+					multiples.push(clone)
+					count++
+				} else {
+					node.data.parent = cluster_id
+				}
 			}
 		}
 		return node
 	})
+
+	console.log('********* TUPLAT **************')
+	console.log(multiples)
+	clustered_nodes = clustered_nodes.concat(multiples)
 
 	// add cluster nodes and edges to output
 	clustered_nodes = clustered_nodes.concat(cluster_nodes)
@@ -228,7 +256,7 @@ function convert2CytoScapeJs(data, options) {
 							type_label: v.p._type,
 							active: true,
 							width: 100,
-							idc: v.r.replace(':','_')
+							idc: v.r.replace('#','')
 						}
 					}
 				} else {
@@ -241,7 +269,7 @@ function convert2CytoScapeJs(data, options) {
 							type_label: options.labels[v.t],
 							active: v.p._active,
 							width: 100,
-							idc: v.r.replace(':','_')
+							idc: v.r.replace('#','')
 						 }
 					}
 					if(!node.data.active) inactive_nodes.push(v.r)
@@ -307,8 +335,7 @@ function convert2CytoScapeJs(data, options) {
 
 	// group only if we are on homepage
 	if(options.current) {
-		//return {nodes:nodes, edges: edges}
-		var grouped = nodeGrouping(nodes, edges, vertex_types)
+		var grouped = nodeGrouping(nodes, edges, vertex_types, options)
 		return {nodes:grouped.nodes, edges: grouped.edges}
 	} else {
 		return {nodes:nodes, edges: edges}

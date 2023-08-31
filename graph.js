@@ -364,16 +364,24 @@ module.exports = class Graph {
 	}
 
 
-	async checkMe(user) {
+	async checkMe(user, access) {
+
+		var rights = 'user'
+		if(['user', 'creator', 'admin'].includes(access)) rights = access
+
 		if(!user) throw('user not defined')
 		var query = `MATCH (me:Person {id:"${user}"}) return id(me) as rid, me._group as group, me._access as access`
 		var result = await web.cypher( query)
+
 		// add user if not found
 		if(result.result.length == 0) {
-			query = `MERGE (p:Person {id: "${user}"}) SET p.label = "${user}", p._group = 'user', p._active = true`
+			
+			query = `MERGE (p:Person {id: "${user}"}) SET p.label = "${user}", p._group = 'user', p._active = true, p._access = '${rights}'`
+
 			result = await web.cypher( query)
 			query = `MATCH (me:Person {id:"${user}"}) return id(me) as rid, me._group as group`
 			result = await web.cypher( query)
+
 			return result.result[0]
 		} else return result.result[0]
 	}
@@ -617,6 +625,11 @@ module.exports = class Graph {
 		}
 	}
 
+
+	async getNodeCount(type) {
+		var query = `MATCH (t:${type}) RETURN count(t) AS count`
+		return await web.cypher( query)
+	}
 
 	async getTags() {
 		var query = 'MATCH (t:Tag) RETURN t order by t.id'
