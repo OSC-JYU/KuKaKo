@@ -140,16 +140,16 @@ function nodeGrouping(nodes, edges, vertex_types, options) {
 
 
 	for(var edge of edges) {
-		console.log('****************************')
-		console.log(edge)
-		console.log('****************************')
-		//console.log(options)
-		var cluster_id = edge.data.source + '__' + edge.data.type + '__' + vertex_types[edge.data.target]
-		if(unique_links[cluster_id]) {
-			unique_links[cluster_id].push(edge.data.target)
-		} else {
-			unique_links[cluster_id] = [edge.data.target]
+		// currently cluster only if source is Person TODO: remove this constraint!
+		if(vertex_types[options.current] == 'Person') {
+			var cluster_id = edge.data.source + '__' + edge.data.type + '__' + vertex_types[edge.data.target]
+			if(unique_links[cluster_id]) {
+				unique_links[cluster_id].push(edge.data.target)
+			} else {
+				unique_links[cluster_id] = [edge.data.target]
+			}
 		}
+
 	}
 	console.log(unique_links)
 	console.log(vertex_types)
@@ -172,7 +172,7 @@ function nodeGrouping(nodes, edges, vertex_types, options) {
 			cluster_nodes.push({data: {name: cluster_label, type_label: 'Cluster', id: cluster_id, type:'Cluster', width:100, active:true}})
 
 			// add link from "central node" to cluster node
-			//cluster_edges.push({data: {label: '', source: source, target: cluster_id, active: true}})
+			cluster_edges.push({data: {label: '', source: source, target: cluster_id, active: true}})
 		}
 	}
 
@@ -193,7 +193,7 @@ function nodeGrouping(nodes, edges, vertex_types, options) {
 
 	var multiples = []
 
-	// add parent to Cluster node to all clustered notes
+	// set .parent to Cluster node to all clustered notes
 	clustered_nodes = nodes.filter(node => {
 		var count = 0
 		for(var cluster_id of clustered_links) {
@@ -213,8 +213,6 @@ function nodeGrouping(nodes, edges, vertex_types, options) {
 		return node
 	})
 
-	console.log('********* TUPLAT **************')
-	console.log(multiples)
 	clustered_nodes = clustered_nodes.concat(multiples)
 
 	// add cluster nodes and edges to output
