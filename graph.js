@@ -19,22 +19,33 @@ module.exports = class Graph {
 		console.log(`ArcadeDB: ${web.getURL()}`)
 		console.log(`Checking database...`)
 		this.docIndex = docIndex
-		var query = 'MATCH (n:Schema) return n'
+		const query = 'MATCH (n:Schema) return n'
+
 		try {
-			var result = await web.cypher(query)
+			await web.cypher(query)
 		} catch (e) {
 			try {
-				console.log('Database not found, creating...')
-				console.log(e)
-				await web.createDB()
+				if(e.code == 'ECONNREFUSED') {
+					console.log('database not ready, waiting 10 seconds...')
+					await timers.setTimeout(10000)
+				}
+				console.log('Checking database...')
+				var result = await web.cypher(query)
 			} catch (e) {
-				console.log(`Could not init database. \nTrying again in 10 secs...`)
-				await timers.setTimeout(10000)
-				try {
-					await web.createDB()
-				} catch (e) {
-					console.log(`Could not init database. \nIs Arcadedb running at ${web.getURL()}?`)
-					throw('Could not init database. exiting...')
+				if(e.code == 'ECONNREFUSED') {
+					console.log(`ERROR: Database connection refused! \nIs Arcadedb running at ${web.getURL()}?`)
+					console.log('exiting...')
+					process.exit(1)
+				} else {
+					console.log(`Database not found! \nTrying to create in 10 secs...`)
+					await timers.setTimeout(10000)
+					try {
+						await web.createDB()
+					} catch (e) {
+						console.log(`Could not init database. \nIs Arcadedb running at ${web.getURL()}?`)
+						console.log('exiting...')
+						process.exit(1)
+					}
 				}
 			}
 		}
@@ -51,7 +62,6 @@ module.exports = class Graph {
 			await web.createVertexType('Menu')
 			await web.createVertexType('Query')
 			await web.createVertexType('Tag')
-			await web.createVertexType('NodeGroup')
 			await schema.importSystemSchema()
 			await this.createSystemGraph()
 			// Make sure that base system graph exists

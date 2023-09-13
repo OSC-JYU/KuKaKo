@@ -15,6 +15,18 @@ web.getURL = function() {
 	return URL
 }
 
+web.dbStatus = async function() {
+	const { default: got } = await import('got');
+	var url = URL.replace(`/command/${DB}`, '/ready')
+
+	try {
+		await got.get(url)
+	} catch(e) {
+		throw({message: "DB connection failed", code: e.code})
+	}
+}
+
+
 web.createDB = async function() {
 	const { default: got } = await import('got');
 	var url = URL.replace(`/command/${DB}`, '/server')
@@ -39,8 +51,8 @@ web.createVertexType = async function(type) {
 	try {
 		await this.sql(query)
 	} catch (e) {
-		console.log(e.message)
-		//console.log(`${type} exists`)
+		//console.log(e.message)
+		console.log(`${type} exists`)
 	}
 }
 
@@ -90,8 +102,7 @@ web.cypher = async function(query, options, no_console) {
 			return response
 		}
 	} catch(e) {
-		console.log(e.message)
-		throw({message: e.message})
+		throw({message: e.message, code: e.code})
 	}
 }
 
