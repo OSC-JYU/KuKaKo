@@ -48,10 +48,11 @@
 <li class="toctree-l1"><a class="reference internal" href="usage.html">User Documentation</a></li>
 <li class="toctree-l1"><a class="reference internal" href="manager.html">Content Manager (Creator)</a></li>
 <li class="toctree-l1 current"><a class="current reference internal" href="#">Admin</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="#setting-up-navigation">Setting up navigation</a><ul>
-<li class="toctree-l3"><a class="reference internal" href="#user-roles">User Roles</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#setting-things-up">Setting things up</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#setting-up-navigation">Setting up navigation</a></li>
 </ul>
 </li>
+<li class="toctree-l2"><a class="reference internal" href="#user-roles">User Roles</a></li>
 </ul>
 </li>
 <li class="toctree-l1"><a class="reference internal" href="developers.html">Install</a></li>
@@ -84,8 +85,16 @@
   <section id="admin">
 <h1>Admin<a class="headerlink" href="#admin" title="Link to this heading"></a></h1>
 <p>Admins can alter the change navigation settings, set user privileges and alter schema.</p>
+<section id="setting-things-up">
+<h2>Setting things up<a class="headerlink" href="#setting-things-up" title="Link to this heading"></a></h2>
+<p>The first thing you must do as an admin, is to load schema.</p>
+<blockquote>
+<div><p>Choose gear icon -&gt; “import schema” -&gt; “organisation_en.yaml” and click “DELETE ALL and import”.</p>
+</div></blockquote>
+<p>Now check the schema page again (reload if necessary).You should see structure for organisation. There are teams, work groups, IT systems, web sites etc.</p>
+<img alt="_images/schema.jpg" src="_images/schema.jpg" />
 <section id="setting-up-navigation">
-<h2>Setting up navigation<a class="headerlink" href="#setting-up-navigation" title="Link to this heading"></a></h2>
+<h3>Setting up navigation<a class="headerlink" href="#setting-up-navigation" title="Link to this heading"></a></h3>
 <p>KuKaKo is graph based system and also navigation is graph. You can find it from “navigation” under the gear menu.</p>
 <img alt="_images/nav_graph.jpg" src="_images/nav_graph.jpg" />
 <p>Navigation graph consists of queries, menus and user groups.</p>
@@ -95,8 +104,10 @@
 <p>User groups and roles</p>
 <p>Persons are also users of KuKaKo.</p>
 <p>User groups define what user can see in the system. Each user group can have their own menus and queries on them. User groups are nodes with type UserGroup.</p>
+</section>
+</section>
 <section id="user-roles">
-<h3>User Roles<a class="headerlink" href="#user-roles" title="Link to this heading"></a></h3>
+<h2>User Roles<a class="headerlink" href="#user-roles" title="Link to this heading"></a></h2>
 <p>User roles define what user can do in the system and user can have only one role. There are three user roles in KuKaKo.</p>
 <ul class="simple">
 <li><dl class="simple">
@@ -115,7 +126,6 @@
 </dl>
 </li>
 </ul>
-</section>
 </section>
 </section>
 

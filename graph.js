@@ -206,8 +206,25 @@ module.exports = class Graph {
 					throw('Merge failed!')
 				}
 			}
-		} else {
+		} 
+	}
 
+
+	// TODO
+	async mergeConnect(from, relation, to) {
+		// NOTE: we cannnot use Cypher's merge, since it includes attributes in comparision
+		// check if relationship is found
+		const merge = `MATCH (from),(to) WHERE id(from) = "${from}" AND id(to) = "${to}" MERGE (from)-[:${relation}]->(to) return from, to`
+		// if relation is found, then update attributes if there are any
+
+		// if relation is not found, create it
+		try {
+			var response = await web.cypher(merge)
+			console.log(response)
+			return response.data
+		} catch(e) {
+			console.log(e)
+			throw('Merge connection failed!')
 		}
 	}
 
@@ -401,6 +418,7 @@ module.exports = class Graph {
 		if(!user) throw('user not defined')
 		var query = `MATCH (me:Person {id:"${user}"}) return id(me) as rid, me._group as group, me._access as access`
 		var response = await web.cypher( query)
+		if(!response.result) throw('user not found!')
 		return response.result[0]
 	}
 
@@ -507,8 +525,7 @@ module.exports = class Graph {
 			const data = await fsPromises.readFile(file_path, 'utf8')
 			const graph_data = yaml.load(data)
 			if(mode == 'clear') {
-				var query = 'MATCH (s) WHERE NOT s:Schema DETACH DELETE s'
-				var result = await web.cypher( query)
+				await web.clearGraph()
 				await this.setSystemNodes()
 				await this.createSystemGraph()
 				await this.writeGraphToDB(graph_data)
@@ -534,7 +551,9 @@ module.exports = class Graph {
 				console.log(node)
 				const type = Object.keys(node)[0]
 				await this.merge(type, node)
-
+			}
+			for(var edge of graph.edges) {
+			
 			}
 		} catch (e) {
 			throw(e)
@@ -549,12 +568,12 @@ module.exports = class Graph {
 				const type = Object.keys(node)[0]
 				console.log(type)
 				console.log(node[type])
-				if(type != 'Layout')
-					await this.create(type, node[type])
+				await this.create(type, node[type])
 			}
 
 			for(var edge of graph.edges) {
 				const edge_key = Object.keys(edge)[0]
+				console.log(edge_key)
 				const splitted = edge_key.split('->')
 				if(splitted.length == 3) {
 					const link = splitted[1].trim()

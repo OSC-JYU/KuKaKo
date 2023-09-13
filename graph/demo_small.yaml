@@ -35,6 +35,11 @@ nodes:
       description: Strange and difficult project!
       id: project1
 
+  - Project:
+      label: Big project
+      description: Things are big in here
+      id: project2
+
   - Query:
       label: All projects
       query: MATCH (n:Project) OPTIONAL MATCH (n)--(p:Person) RETURN n,p
@@ -47,11 +52,14 @@ nodes:
 
 edges:
 
-  - Person:mic@kuka.ka>IS_MEMBER_OF_TEAM>Team:team_kuka:
-  - Person:peter@ku.ka>IS_MEMBER_OF_TEAM>Team:team_kuka:
-  - Person:kettu@ku.ka>IS_MEMBER_OF_TEAM>Team:team_kuka:
-  - Person:kettu@ku.ka>IS_COORDINATOR_OF_PROJECT>Project:project1:
-  - Person:local.user@localhost>PARTICIPANT_OF_PROJECT>Project:project1:
+  - Person:local.user@localhost->IS_MEMBER_OF_TEAM->Team:team_kuka:
+  - Person:mic@kuka.ka->IS_MEMBER_OF_TEAM->Team:team_kuka:
+  - Person:peter@ku.ka->IS_MEMBER_OF_TEAM->Team:team_kuka:
+  - Person:kettu@ku.ka->IS_MEMBER_OF_TEAM->Team:team_kuka:
+  - Person:kettu@ku.ka->IS_COORDINATOR_OF_PROJECT->Project:project1:
+  - Person:local.user@localhost->IS_PARTICIPANT_OF_PROJECT->Project:project1:
       info: I do all the work.
-  - Query:q2>IN_MENU>Menu:me:
-  - Query:q3>IN_MENU>Menu:me:
+  - Person:local.user@localhost->IS_PARTICIPANT_OF_PROJECT->Project:project2:
+      info: I do very little here...
+  - Query:q2->IN_MENU->Menu:me:
+  - Query:q3->IN_MENU->Menu:me:

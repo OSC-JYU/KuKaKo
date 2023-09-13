@@ -18,7 +18,7 @@ For developers (experimental)
 
 ## Quick Start (local mode)
 
-This will install KuKaKo in local mode, so that you can test things.
+This will install KuKaKo in local mode with admin rights, so that you can test things.
 You should have Git and Docker Compose installed.
 
 	git clone https://github.com/OSC-JYU/KuKaKo.git

@@ -4,6 +4,17 @@ Admin
 Admins can alter the change navigation settings, set user privileges and alter schema.
 
 
+Setting things up
+------------------
+
+The first thing you must do as an admin, is to load schema.
+
+    Choose gear icon -> "import schema" -> "organisation_en.yaml" and click "DELETE ALL and import".
+
+Now check the schema page again (reload if necessary).You should see structure for organisation. There are teams, work groups, IT systems, web sites etc.
+
+.. image:: images/schema.jpg
+
 Setting up navigation
 ^^^^^^^^^^^^^^^^^^^^^
 

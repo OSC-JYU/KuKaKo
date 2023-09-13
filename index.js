@@ -449,18 +449,32 @@ router.post('/api/graph/upload', upload.single('file'), async function (ctx)  {
 
 router.post('/api/schema/upload', upload.single('file'), async function (ctx)  {
 
-    ctx.body = 'done';
+	var filepath = `schemas/${ctx.file.originalname}`
+	await moveFile(ctx.file.path, filepath, ctx)
+
 })
 
 router.post('/api/styles/upload', upload.single('file'), async function (ctx)  {
 
-    ctx.body = 'done';
+	var filepath = `styles/${ctx.file.originalname}`
+	await moveFile(ctx.file.path, filepath, ctx)
 })
 
 
 
 app.use(router.routes());
 
+async function moveFile(file, target_path, ctx) {
+	var exists = await checkFileExists(target_path)
+	if(!exists) {
+		await fs.promises.rename(file, target_path);
+		console.log('File moved successfully!')
+		ctx.body = 'done';
+	} else {
+		await fs.promises.unlink(ctx.file.path)
+		throw('file exists!')
+	}
+}
 
 async function checkFileExists(filePath) {
 	try {

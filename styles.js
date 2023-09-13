@@ -74,23 +74,6 @@ styles.importStyle = async function(filename, mode) {
 		await web.cypher( query)
 	}
 
-	// for(style of styles) {
-	// 	if(style.selector.startsWith('node[type=')) {
-	// 		var selector = style.selector.replace('node[type=', '')
-	// 		selector = selector.replace(/[\"|\'|\]]/g,'')
-	// 		var style_str = JSON.stringify(style.style)
-	// 		style_str = style_str.replace(/\'/g, '##')
-	// 		try {
-	// 			var query = `MATCH (s:Schema {_type:"${selector}"}) SET s._style = '${style_str}'`
-	// 			await web.cypher( query)
-	// 		} catch (e) {
-	// 			console.log(`\nWARNING: invalid style for Schema ${selector}\n`)
-	// 			console.log(style.style)
-	// 			var query = `MATCH (s:Schema {_type:"${selector}"}) SET s._style = '{}'`
-	// 			await web.cypher( query)
-	// 		}
-	// 	}
-	// }
 	console.log('** IMPORT DONE **')
     return styles
 }

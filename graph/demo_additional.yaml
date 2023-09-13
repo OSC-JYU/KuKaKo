@@ -1,0 +1,25 @@
+# A very simple demo graph
+# Please note that nodes have IDs and those IDS are used for linking
+
+nodes:
+  - Person:
+      label: Demo person 2
+      id: shirley@kuka.ko
+
+  - Team:
+      label: Demo 2
+      description: Odd team of excellent personalities!
+      id: team_demo2
+
+
+  - Project:
+      label: Additional project
+      description: Strange and difficult project!
+      id: project_demo2
+
+
+edges:
+
+  - Person:local.user@localhost->IS_MEMBER_OF_TEAM->Team:team_demo2:
+  - Person:shirley@kuka.ko->IS_COORDINATOR_OF_PROJECT->Project:project_demo2:
+
