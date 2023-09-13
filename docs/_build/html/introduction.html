@@ -1,0 +1,183 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+  <meta charset="utf-8" /><meta name="generator" content="Docutils 0.18.1: http://docutils.sourceforge.net/" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Introduction &mdash; kukako  documentation</title>
+      <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+      <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
+  <!--[if lt IE 9]>
+    <script src="_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+        <script src="_static/jquery.js?v=5d32c60e"></script>
+        <script src="_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+        <script src="_static/documentation_options.js?v=5929fcd5"></script>
+        <script src="_static/doctools.js?v=888ff710"></script>
+        <script src="_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="User Documentation" href="usage.html" />
+    <link rel="prev" title="Welcome to kukako’s documentation!" href="index.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="index.html" class="icon icon-home">
+            kukako
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
+<ul class="current">
+<li class="toctree-l1 current"><a class="current reference internal" href="#">Introduction</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#user-interface">User Interface</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#navigation">Navigation</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#queries">Queries</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#user-roles">User Roles</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="usage.html">User Documentation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="manager.html">Content Manager (Creator)</a></li>
+<li class="toctree-l1"><a class="reference internal" href="admin.html">Admin</a></li>
+<li class="toctree-l1"><a class="reference internal" href="developers.html">Install</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="index.html">kukako</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="index.html" class="icon icon-home" aria-label="Home"></a></li>
+      <li class="breadcrumb-item active">Introduction</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="_sources/introduction.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="introduction">
+<h1>Introduction<a class="headerlink" href="#introduction" title="Link to this heading"></a></h1>
+<p class="centered">
+<strong>KuKaKo: Make your organisation browseable!</strong></p><p>KuKaKo is a visual, open source tool for communicating (sometimes messy) connections between people and things in community.</p>
+<ul class="simple">
+<li><p>KuKaKo is cute, simple and very human centric!</p></li>
+<li><p>Very flexible, visual schema</p></li>
+<li><p>Visual graph can be re-arranged by user per query or node view</p></li>
+<li><p>Navigation is based on powerful queries and is adjustable per user group</p></li>
+<li><p>Nodes and relationships can be deactivated (archived) instead of removing</p></li>
+<li><p>Process documentation by Stories</p></li>
+</ul>
+<img alt="_images/homepage.png" src="_images/homepage.png" />
+<p>KuKaKo uses <strong>directed graph</strong> for storing and displaying data. A directed graph is like a visual network of points connected by arrows. The points are called nodes, while the arrows are edges. Nodes have type like “Website” or “Person” and edges have label like “IS AUTHOR OF” or “IS PART OF”.</p>
+<p>When nodes are linked with these edges, the result is a directed graph that is exceptionally well-suited for representing complex relationships. This approach allows KuKaKo to efficiently store, organize, and display various types of information, making it a versatile tool for visualizing connections between different entities, whether it’s mapping the relationships between websites and authors, or illustrating how individuals are associated with various groups or organizations.</p>
+<p><strong>Schema</strong> defines what types of nodes are available and how they can be linked. Schema itself is a graph and you can find it by clicking the gear icon on the top-right corner and choosing “Schema”.</p>
+<img alt="_images/schema.jpg" src="_images/schema.jpg" />
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>Editing schema requires admin rights.</p>
+</div>
+<section id="user-interface">
+<h2>User Interface<a class="headerlink" href="#user-interface" title="Link to this heading"></a></h2>
+<p>Given that the visual graph in KuKaKo can become quite complex, especially when it encompasses thousands of nodes and edges, we’ve implemented a user-friendly approach to help users navigate and focus on specific subsets of the data. Users will find their personalized homepages and menus, which serve as entry points, displaying manageable subgraphs.</p>
+<p>These subgraphs offer a condensed view, allowing users to dive deeper into the graph by simply double-clicking on nodes within the visual representation. This intuitive system empowers users to explore and interact with the data at their preferred granularity, ensuring a more streamlined and efficient experience.</p>
+<section id="navigation">
+<h3>Navigation<a class="headerlink" href="#navigation" title="Link to this heading"></a></h3>
+<p>Every user has <strong>home page</strong>, where only nodes directly linked to the user are displayed. The visual graph can be arranged by the user just by dragging nodes.</p>
+<p>The main user interface consists of menu, visul graph display and list view.</p>
+<p>List view
+On the right side is the list view. It show the same data as graph view, but in the form of list.</p>
+<p>User can navigate with</p>
+</section>
+<section id="queries">
+<h3>Queries<a class="headerlink" href="#queries" title="Link to this heading"></a></h3>
+<p>Queries use powerful Cypher query language and they are the main tool for showing graph data nicely to users. Queries are linked to Menu nodes. Queries are nodes with type Query.
+Menus</p>
+<p>Menus are query holders in the user interface. Menus are linked to UserGroups and are visible only Persons within that UserGrop. Menus are nodes with type “Menu”.
+User groups and roles</p>
+<p>Persons are also users of KuKaKo.</p>
+<p>User groups define what user can see in the system. Each user group can have their own menus and queries on them. User groups are nodes with type UserGroup.</p>
+</section>
+<section id="user-roles">
+<h3>User Roles<a class="headerlink" href="#user-roles" title="Link to this heading"></a></h3>
+<p>User roles define what user can do in the system and user can have only one role. There are three user roles in KuKaKo.</p>
+<ul class="simple">
+<li><dl class="simple">
+<dt>User</dt><dd><p>can edit only relationships from and to “me”.</p>
+</dd>
+</dl>
+</li>
+<li><dl class="simple">
+<dt>Creator</dt><dd><p>aka “content manager”, can add nodes, edit nodes and add and edit all edges between nodes.</p>
+</dd>
+</dl>
+</li>
+<li><dl class="simple">
+<dt>Admin</dt><dd><p>admin can set user roles for other users and admin can edit schema.</p>
+</dd>
+</dl>
+</li>
+</ul>
+</section>
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="index.html" class="btn btn-neutral float-left" title="Welcome to kukako’s documentation!" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="usage.html" class="btn btn-neutral float-right" title="User Documentation" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2023, Ari Häyrinen.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

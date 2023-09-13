@@ -89,7 +89,14 @@ const upload = multer({
 
 // check that user has rights to use app
 app.use(async function handleError(context, next) {
-	if(process.env.MODE == 'development') context.request.headers[AUTH_HEADER] = "local.user@localhost" // dummy shibboleth for local use
+	if(process.env.MODE == 'development') {
+		if(process.env.DEV_USER) {
+			context.request.headers[AUTH_HEADER] = process.env.DEV_USER // dummy shibboleth for local use	
+		} else {
+			context.request.headers[AUTH_HEADER] = 'local.user@localhost'
+		}
+	}
+
 
 	if(process.env.CREATE_USERS_ON_THE_FLY == 1) {
 		await next()
@@ -329,6 +336,11 @@ router.post('/api/layouts', async function (ctx) {
 router.get('/api/layouts/:rid', async function (ctx) {
 	var me = await graph.myId(ctx.request.headers[AUTH_HEADER])
 	var n = await graph.getLayoutByTarget(ctx.request.params.rid, me)
+	ctx.body = n
+})
+
+router.get('/api/stories/:rid', async function (ctx) {
+	var n = await graph.getStory(ctx.request.params.rid)
 	ctx.body = n
 })
 

@@ -12,7 +12,7 @@
 	{
 		"selector": "node:parent[type='Cluster']",
 		"style": {
-			"content": "Cluster",
+			"content": "(node) => node.data('name')",
 			"color":"black",
 			"background-color": "#e6e6e6"
 		}

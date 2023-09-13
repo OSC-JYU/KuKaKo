@@ -31,7 +31,6 @@ const basestyle = [
         "selector": "edge",
         "style": {
             "label": "data(label)",
-            "curve-style": "bezier",
             "control-point-distance": 30,
             "control-point-weight": 0.5,
             "overlay-padding": "3px",

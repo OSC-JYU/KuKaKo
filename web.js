@@ -7,6 +7,7 @@ const DB_HOST = process.env.DB_HOST || 'http://localhost'
 const DB = process.env.DB_NAME || 'kukako'
 const PORT = process.env.DB_PORT || 2480
 const URL = `${DB_HOST}:${PORT}/api/v1/command/${DB}`
+const GROUP_THRESHOLD = process.env.GROUP_THRESHOLD || 1
 
 let web = {}
 
@@ -24,9 +25,7 @@ web.createDB = async function() {
 			command: `create database ${DB}`
 		}
 	};
-console.log(url)
-console.log(data)
-console.log(process.env.DB_HOST)
+
 	try {
 		await got.post(url, data)
 	} catch(e) {
@@ -85,7 +84,7 @@ web.cypher = async function(query, options, no_console) {
 		if(query && query.toLowerCase().includes('create')) return response
 		else if(!options.serializer) return response
 		else if(options.serializer == 'graph' && options.format == 'cytoscape') {
-			options.labels = await getSchemaLabels(data)
+			options.labels = await getSchemaVertexLabels(data)
 			return convert2CytoScapeJs(response, options)
 		} else {
 			return response
@@ -96,7 +95,7 @@ web.cypher = async function(query, options, no_console) {
 	}
 }
 
-async function getSchemaLabels(data) {
+async function getSchemaVertexLabels(data) {
 
 	const { default: got } = await import('got');
 
@@ -125,8 +124,9 @@ function setParent(vertices, child, parent) {
 	}
 }
 
-// not really clustering, more like auto-compound
-function cluster(nodes, edges) {
+// group relations by their type if count > grouping threshold 
+// this groups relations only for one "central node" (homepage of person)
+function nodeGrouping(nodes, edges, vertex_types, options) {
 	var unique_links = {}
 	var cluster_types = {}
 	var cluster_nodes = []
@@ -140,23 +140,39 @@ function cluster(nodes, edges) {
 
 
 	for(var edge of edges) {
-		var cluster_id = edge.data.source + '__' + edge.data.type
-		if(unique_links[cluster_id]) {
-			unique_links[cluster_id].push(edge.data.target)
-		} else {
-			unique_links[cluster_id] = [edge.data.target]
+		// currently cluster only if source is Person TODO: remove this constraint!
+		if(vertex_types[options.current] == 'Person') {
+			var cluster_id = edge.data.source + '__' + edge.data.type + '__' + vertex_types[edge.data.target]
+			if(unique_links[cluster_id]) {
+				unique_links[cluster_id].push(edge.data.target)
+			} else {
+				unique_links[cluster_id] = [edge.data.target]
+			}
 		}
+
 	}
+	console.log(unique_links)
+	console.log(vertex_types)
 
 	for(var cluster_id in unique_links) {
-		if(unique_links[cluster_id].length > 10) {
+		if(unique_links[cluster_id].length > GROUP_THRESHOLD) {
 			var splitted = cluster_id.split('__')
 			var source = splitted[0]
 			var rel = splitted[1]
+			var target = splitted[2]
 			clustered_links.push(cluster_id)
 
-			cluster_nodes.push({data: {name: cluster_id, type_label: 'Cluster', id: cluster_id, type:'Cluster', width:100, active:true}})
-			cluster_edges.push({data: {label: rel, source: source, target: cluster_id, active: true}})
+			var schema_id = `Person:${rel}:${target}`
+			var cluster_label = rel
+			if(options.schemas[schema_id]) {
+				cluster_label = options.schemas[schema_id].label
+			}
+			
+			// add cluster node
+			cluster_nodes.push({data: {name: cluster_label, type_label: 'Cluster', id: cluster_id, type:'Cluster', width:100, active:true}})
+
+			// add link from "central node" to cluster node
+			cluster_edges.push({data: {label: '', source: source, target: cluster_id, active: true}})
 		}
 	}
 
@@ -175,19 +191,29 @@ function cluster(nodes, edges) {
 		if(!found) return edge
 	})
 
-	// add parent to Cluster node to all clustered notes
+	var multiples = []
+
+	// set .parent to Cluster node to all clustered notes
 	clustered_nodes = nodes.filter(node => {
+		var count = 0
 		for(var cluster_id of clustered_links) {
-			var splitted = cluster_id.split('__')
-			var source = splitted[0]
-			var rel = splitted[1]
 			if(unique_links[cluster_id].includes(node.data.id)) {
-				console.log(cluster_id)
-				node.data.parent = cluster_id
+				// create copies of nodes that are on multiple clusters
+				if(node.data.parent) {
+					const clone = JSON.parse(JSON.stringify(node))
+					clone.data.id = clone.data.id + '_' + count
+					clone.data.parent = cluster_id
+					multiples.push(clone)
+					count++
+				} else {
+					node.data.parent = cluster_id
+				}
 			}
 		}
 		return node
 	})
+
+	clustered_nodes = clustered_nodes.concat(multiples)
 
 	// add cluster nodes and edges to output
 	clustered_nodes = clustered_nodes.concat(cluster_nodes)
@@ -213,6 +239,7 @@ function convert2CytoScapeJs(data, options) {
 	var vertex_ids = []
 	var nodes = []
 	var inactive_nodes = []
+	var vertex_types = {}
 
 	if(data.result.vertices) {
 		for(var v of data.result.vertices) {
@@ -227,10 +254,11 @@ function convert2CytoScapeJs(data, options) {
 							type_label: v.p._type,
 							active: true,
 							width: 100,
-							idc: v.r.replace(':','_')
+							idc: v.r.replace('#','')
 						}
 					}
 				} else {
+					vertex_types[v.r] = v.t
 					node = {
 						data:{
 							id:v.r,
@@ -239,7 +267,7 @@ function convert2CytoScapeJs(data, options) {
 							type_label: options.labels[v.t],
 							active: v.p._active,
 							width: 100,
-							idc: v.r.replace(':','_')
+							idc: v.r.replace('#','')
 						 }
 					}
 					if(!node.data.active) inactive_nodes.push(v.r)
@@ -268,20 +296,22 @@ function convert2CytoScapeJs(data, options) {
 				if(inactive_nodes.includes(edge.data.source) || inactive_nodes.includes(edge.data.target))
 					edge.data.active = false
 
-				// add relationship labels to graph from schema
+				// add relationship labels to graph from schema relations
 				if(options.schemas) {
-					if(options.schemas[v.t]) {
-						if(options.schemas[edge.data.label].label) {
+					var edge_id = `${vertex_types[edge.data.source]}:${v.t}:${vertex_types[edge.data.target]}`
+
+					if(options.schemas[edge_id]) {
+						if(options.schemas[edge_id].label) {
 							if(edge.data.active) {
-								edge.data.label = options.schemas[edge.data.label].label.toUpperCase()
+								edge.data.label = options.schemas[edge_id].label.toUpperCase()
 							} else {
-								edge.data.label = options.schemas[edge.data.label].label_inactive
+								edge.data.label = options.schemas[edge_id].label_inactive
 							}
 						} else {
 							edge.data.label = edge.data.label
 						}
-						if(options.schemas[v.t].compound === true) {
-							console.log('***************** COMPoUND ***************\n\n')
+
+						if(options.schemas[edge_id].compound === true) {
 							if(options.current == v.o)
 								edges.push(edge)
 							else
@@ -289,19 +319,22 @@ function convert2CytoScapeJs(data, options) {
 						} else {
 							edges.push(edge)
 						}
+
 					} else {
 						edges.push(edge)
 					}
 				} else {
 					edges.push(edge)
 				}
+
 			}
 		}
 	}
+
+	// group only if we are on homepage
 	if(options.current) {
-		//return {nodes:nodes, edges: edges}
-		var clustered = cluster(nodes, edges)
-		return {nodes:clustered.nodes, edges: clustered.edges}
+		var grouped = nodeGrouping(nodes, edges, vertex_types, options)
+		return {nodes:grouped.nodes, edges: grouped.edges}
 	} else {
 		return {nodes:nodes, edges: edges}
 	}

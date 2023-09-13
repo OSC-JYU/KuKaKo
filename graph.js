@@ -314,7 +314,7 @@ module.exports = class Graph {
 		var schema_relations = {}
 		var schemas = await web.cypher( 'MATCH (s:Schema)-[r]->(s2:Schema) return type(r) as type, r.label as label, r.label_rev as label_rev, COALESCE(r.label_inactive, r.label) as label_inactive, s._type as from, s2._type as to, r.tags as tags, r.compound as compound')
 		schemas.result.forEach(x => {
-			schema_relations[x.type] = x
+			schema_relations[`${x.from}:${x.type}:${x.to}`] = x
 		})
 		return schema_relations
 	}
@@ -364,16 +364,24 @@ module.exports = class Graph {
 	}
 
 
-	async checkMe(user) {
+	async checkMe(user, access) {
+
+		var rights = 'user'
+		if(['user', 'creator', 'admin'].includes(access)) rights = access
+
 		if(!user) throw('user not defined')
 		var query = `MATCH (me:Person {id:"${user}"}) return id(me) as rid, me._group as group, me._access as access`
 		var result = await web.cypher( query)
+
 		// add user if not found
 		if(result.result.length == 0) {
-			query = `MERGE (p:Person {id: "${user}"}) SET p.label = "${user}", p._group = 'user', p._active = true`
+			
+			query = `MERGE (p:Person {id: "${user}"}) SET p.label = "${user}", p._group = 'user', p._active = true, p._access = '${rights}'`
+
 			result = await web.cypher( query)
 			query = `MATCH (me:Person {id:"${user}"}) return id(me) as rid, me._group as group`
 			result = await web.cypher( query)
+
 			return result.result[0]
 		} else return result.result[0]
 	}
@@ -461,6 +469,26 @@ module.exports = class Graph {
 		}
 	}
 
+
+	async getStory(rid) {
+		if(!rid.match(/^#/)) rid = '#' + rid
+		var query = `MATCH (s:Story) WHERE id(s) = '${rid}' RETURN s`
+		var result = await web.cypher( query)
+
+		if(result.result.length == 1) {
+			var filename = 'story_' + rid + '.yaml'
+			try {
+				const file_path = path.resolve('./stories', filename)
+				const data = await fsPromises.readFile(file_path, 'utf8')
+				const story_data = yaml.load(data)
+				return story_data
+			} catch (e) {
+				throw(e)
+			}
+		} else {
+			throw('Not found')
+		}
+	}
 
 	async importGraphYAML(filename, mode) {
 		console.log(`** importing graph ${filename} with mode ${mode} **`)
@@ -598,6 +626,11 @@ module.exports = class Graph {
 	}
 
 
+	async getNodeCount(type) {
+		var query = `MATCH (t:${type}) RETURN count(t) AS count`
+		return await web.cypher( query)
+	}
+
 	async getTags() {
 		var query = 'MATCH (t:Tag) RETURN t order by t.id'
 		return await web.cypher( query)
@@ -628,28 +661,34 @@ module.exports = class Graph {
 
 
 	async setLayout(body, me) {
-		
+
 		var query = ''
 		var filename = ''
 		if(!body.target || !body.data) throw('data missing')
 
-		var for_cypher = {}
-		for(var id in body.data) {
-			var id_clean = id.replace('#', 'node').replace(':','_')
-			for_cypher[id_clean] = body.data[id]
-		}
-		var as_string = JSON5.stringify(for_cypher)
-
-		if(COMMON_LAYOUTS .includes(body.target)) {
-			filename = `layout_${body.target}-${body.target}.json`
-			
+		// admins can save common layouts (like schema) and any users layout
+		if(me.access == 'admin') {
+			if(COMMON_LAYOUTS.includes(body.target)) {
+				filename = `layout_${body.target}-${body.target}.json`
+				
+			} else {
+				if(!body.target.match(/^#/)) body.target = '#' + body.target
+				filename = `layout_${body.target}-${body.target}.json`
+			}
+		// other users can save only their own layout
 		} else {
 			if(!body.target.match(/^#/)) body.target = '#' + body.target
-			filename = `layout_${body.target}-${me.rid}.json`
+			if(body.target == me.rid)
+				filename = `layout_${body.target}-${me.rid}.json`
+			else
+				throw('No permissions')
 		}
 
-		const filePath = path.resolve('./layouts', filename)
-		await fsPromises.writeFile(filePath, JSON.stringify(body.data), 'utf8')
+		if(filename) {
+			const filePath = path.resolve('./layouts', filename)
+			await fsPromises.writeFile(filePath, JSON.stringify(body.data), 'utf8')
+		}
+
 	
 	}
 
@@ -699,16 +738,21 @@ module.exports = class Graph {
 
 		// add every existing relationship as "data" under relation in schema
 		for(var relation of relations) {
-			
+
+			//data.result.forEach(x => console.log(`${type}:${x.rel['@type']}:${x.target['@type']}`))
 			relation.data = data.result.filter(ele => {
-				if(ele.rel && ele.rel['@type'] == relation.type) return ele
+				if(ele.rel && ele.rel['@type'] == relation.type) {
+					// we know that relation *source* is 'data.result[0].source['@type']'
+					// so not need to test it
+					if(relation.target == ele.target['@type'])
+					 	return ele
+				}
+				
 			}).map(ele => {
-				var out = {}
 				var rel_active = ele.rel._active
 				if(typeof ele.rel._active === 'undefined') rel_active = true
 				if(!ele.target._active) rel_active = false
-				if(ele.rel['@out'] == ele.source['@rid'])
-					out=  {
+				var out = {
 						id: ele.target['@rid'],
 						type: ele.target['@type'],
 						label: ele.target['label'],
@@ -716,16 +760,7 @@ module.exports = class Graph {
 						rel_id: ele.rel['@rid'],
 						rel_active: rel_active
 					}
-				else {
-					out =  {
-						id: ele.target['@rid'],
-						type: ele.target['@type'],
-						label: ele.target['label'],
-						label_rev: ele.target['label_rev'],
-						rel_id: ele.rel['@rid'],
-						rel_active: rel_active
-					}
-				}
+
 				if(ele.rel['attr']) out.rel_attr = ele.rel['attr']
 
 				return out
@@ -792,6 +827,7 @@ module.exports = class Graph {
 
 			}
 			out.tags.default_group = default_group
+
 			return out
 		} else {
 			return relations
