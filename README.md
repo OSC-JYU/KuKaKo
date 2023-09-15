@@ -16,6 +16,13 @@ For developers (experimental)
 - Automatic repository graph of repositories based on commits
 - Automatic virtualisation graph from Docker (containers, images and volumes)
 
+
+
+## Usage
+
+End user documentation is here: https://kukako.readthedocs.io/en/latest/
+(still on progress)
+
 ## Quick Start (local mode)
 
 This will install KuKaKo in local mode with admin rights, so that you can test things.

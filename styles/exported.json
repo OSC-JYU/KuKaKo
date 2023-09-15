@@ -316,86 +316,11 @@
     }
   },
   {
-    "selector": "node[type='Language']",
-    "style": {
-      "background-color": "#86a476"
-    }
-  },
-  {
-    "selector": "node[type='TV_sarja']",
-    "style": {
-      "background-color": "#a062a2"
-    }
-  },
-  {
-    "selector": "node[type='julkaisusarja']",
-    "style": {
-      "width": 240,
-      "height": 40,
-      "shape": "rectangle",
-      "color": "black",
-      "background-color": "white"
-    }
-  },
-  {
-    "selector": "node[type='palvelukokonaisuus']",
-    "style": {
-      "background-color": "rgb(0, 153, 153)",
-      "width": "220px",
-      "height": "60px"
-    }
-  },
-  {
-    "selector": "node[type='Site']",
-    "style": {
-      "background-color": "rgb(0, 41, 87)",
-      "width": "220px"
-    }
-  },
-  {
     "selector": "node[type='Topic']",
     "style": {
       "background-color": "rgb(51, 153, 51)",
       "width": "160px",
       "height": "40px"
-    }
-  },
-  {
-    "selector": "node[type='Webdoc']",
-    "style": {
-      "width": 180,
-      "color": "black",
-      "border-color": "blue",
-      "border-width": 1,
-      "background-color": "white"
-    }
-  },
-  {
-    "selector": "node[type='Hobby']",
-    "style": {
-      "background-color": "#979665"
-    }
-  },
-  {
-    "selector": "node[type='Form']",
-    "style": {
-      "background-color": "#708297",
-      "width": "160px",
-      "height": "40px"
-    }
-  },
-  {
-    "selector": "node[type='EmailList']",
-    "style": {
-      "background-color": "green"
-    }
-  },
-  {
-    "selector": "node[type='Activity']",
-    "style": {
-      "background-color": "rgb(246, 211, 45)",
-      "width": "220px",
-      "color": "black"
     }
   }
 ]

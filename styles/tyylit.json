@@ -40,46 +40,6 @@
     }
   },
   {
-    "selector": "node",
-    "style": {
-      "background-color": "#1C86AA",
-      "shape": "roundrectangle",
-      "height": 20,
-      "font-size": 8,
-      "width": 100,
-      "color": "white",
-      "text-wrap": "wrap",
-      "text-valign": "center",
-      "text-halign": "center",
-      "content": "(node) => node.data('name') + '\\n ('+node.data('type_label')+')'",
-      "border-color": "(node) => node.data('current') ? '#EDA60C' : 'gray'",
-      "border-width": "(node) => node.data('current') ? 3 : 1",
-      "opacity": "(node) => node.data('active') ? 1 : 0.3"
-    }
-  },
-  {
-    "selector": "edge",
-    "style": {
-      "label": "data(label)",
-      "control-point-distance": 30,
-      "control-point-weight": 0.5,
-      "overlay-padding": "3px",
-      "overlay-opacity": 0,
-      "font-family": "FreeSet,Arial,sans-serif",
-      "font-size": "(node) => node.data('active') ? 6 : 4",
-      "font-weight": "normal",
-      "text-background-opacity": 1,
-      "text-background-color": "#ffffff",
-      "text-background-padding": 3,
-      "text-background-shape": "roundrectangle",
-      "width": "(node) => node.data('active') ? 1 : 0.5",
-      "color": "(node) => node.data('active') ? 'black' : 'gray'",
-      "line-opacity": "(node) => node.data('active') ? 1 : 0.3",
-      "curve-style": "(node) => node.data('active') ? 'bezier' : 'taxi'",
-      "target-arrow-shape": "triangle"
-    }
-  },
-  {
     "selector": "node[type='empty']",
     "style": {
       "content": "none",
@@ -313,89 +273,6 @@
     "style": {
       "color": "black",
       "background-color": "#F1C827"
-    }
-  },
-  {
-    "selector": "node[type='Language']",
-    "style": {
-      "background-color": "#86a476"
-    }
-  },
-  {
-    "selector": "node[type='TV_sarja']",
-    "style": {
-      "background-color": "#a062a2"
-    }
-  },
-  {
-    "selector": "node[type='julkaisusarja']",
-    "style": {
-      "width": 240,
-      "height": 40,
-      "shape": "rectangle",
-      "color": "black",
-      "background-color": "white"
-    }
-  },
-  {
-    "selector": "node[type='palvelukokonaisuus']",
-    "style": {
-      "background-color": "rgb(0, 153, 153)",
-      "width": "220px",
-      "height": "60px"
-    }
-  },
-  {
-    "selector": "node[type='Site']",
-    "style": {
-      "background-color": "rgb(0, 41, 87)",
-      "width": "220px"
-    }
-  },
-  {
-    "selector": "node[type='Topic']",
-    "style": {
-      "background-color": "rgb(51, 153, 51)",
-      "width": "160px",
-      "height": "40px"
-    }
-  },
-  {
-    "selector": "node[type='Webdoc']",
-    "style": {
-      "width": 180,
-      "color": "black",
-      "border-color": "blue",
-      "border-width": 1,
-      "background-color": "white"
-    }
-  },
-  {
-    "selector": "node[type='Hobby']",
-    "style": {
-      "background-color": "#979665"
-    }
-  },
-  {
-    "selector": "node[type='Form']",
-    "style": {
-      "background-color": "#708297",
-      "width": "160px",
-      "height": "40px"
-    }
-  },
-  {
-    "selector": "node[type='EmailList']",
-    "style": {
-      "background-color": "green"
-    }
-  },
-  {
-    "selector": "node[type='Activity']",
-    "style": {
-      "background-color": "rgb(246, 211, 45)",
-      "width": "220px",
-      "color": "black"
     }
   }
 ]
