@@ -2,24 +2,44 @@
 # Please note that nodes have IDs and those IDS are used for linking
 
 nodes:
-  - Person:
-      label: Demo person 2
-      id: shirley@kuka.ko
+    - Person:
+        label: Shirley Merged
+        id: shirley@kuka.ko
 
-  - Team:
-      label: Demo 2
-      description: Odd team of excellent personalities!
-      id: team_demo2
+    - Team:
+        label: Merged Team
+        description: Odd team of excellent personalities!
+        id: team_demo2
 
 
-  - Project:
-      label: Additional project
-      description: Strange and difficult project!
-      id: project_demo2
+    - Project:
+        label: Merged Project
+        description: Strange and difficult project!
+        id: project_demo2
 
 
 edges:
 
-  - Person:local.user@localhost->IS_MEMBER_OF_TEAM->Team:team_demo2:
-  - Person:shirley@kuka.ko->IS_COORDINATOR_OF_PROJECT->Project:project_demo2:
+    - Edge:
+        from_type: Person
+        from: shirley@kuka.ko
+        relation: IS_MEMBER_OF_TEAM
+        to_type: Team
+        to: team_kuka
+
+    - Edge:
+        from_type: Person
+        from: shirley@kuka.ko
+        relation: IS_COORDINATOR_OF_PROJECT
+        to_type: Project
+        to: project1
+
+    - Edge:
+        from_type: Person
+        from: local.user@localhost
+        relation: IS_PARTICIPANT_OF_PROJECT
+        to_type: Project
+        to: project_demo2
+        attributes:
+            info: I do all the work.
 
