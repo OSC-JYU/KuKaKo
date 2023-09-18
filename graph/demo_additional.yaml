@@ -3,43 +3,58 @@
 
 nodes:
     - Person:
-        label: Shirley Merged
-        id: shirley@kuka.ko
+        label: Celestia Skyward
+        id: celestia@kuka.ko
 
     - Team:
-        label: Merged Team
+        label: Team Skyward
         description: Odd team of excellent personalities!
         id: team_demo2
 
 
     - Project:
-        label: Merged Project
+        label: Cloud Chasers' Hot Air Balloon Adventures
         description: Strange and difficult project!
         id: project_demo2
 
+    - Site:
+        label: Cloud Chasers site
+        description: Project site of Cloud Chasers' Hot Air Balloon Adventures
+        id: site_cc
 
 edges:
 
     - Edge:
-        from_type: Person
-        from: shirley@kuka.ko
+        from: celestia@kuka.ko
         relation: IS_MEMBER_OF_TEAM
-        to_type: Team
-        to: team_kuka
+        to: team_demo2
 
     - Edge:
-        from_type: Person
-        from: shirley@kuka.ko
+        from: celestia@kuka.ko
         relation: IS_COORDINATOR_OF_PROJECT
-        to_type: Project
-        to: project1
+        to: project_demo2
 
     - Edge:
-        from_type: Person
+        from: celestia@kuka.ko
+        relation: CONTENT_MANAGER_OF
+        to: site_cc
+        attributes:
+            attr: I mostly do staff updates
+
+    - Edge:
+        from: local.user@localhost
+        relation: TECHNICAL_MANAGER_OF
+        to: site_cc
+
+    - Edge:
         from: local.user@localhost
         relation: IS_PARTICIPANT_OF_PROJECT
-        to_type: Project
         to: project_demo2
         attributes:
-            info: I do all the work.
+            attr: I do all the work.
+
+    - Edge:
+        from: project_demo2
+        relation: HAS_SITE
+        to: site_cc
 

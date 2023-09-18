@@ -11,6 +11,7 @@ const timers = require('timers-promises')
 // some layouts are same for all users
 const COMMON_LAYOUTS = ['schema', 'navigation', 'about']
 const MAX_STR_LENGTH = 2048
+const MATCH_BY_ID = true
 
 // Assigning to exports will not modify module, must use module.exports
 module.exports = class Graph {
@@ -212,22 +213,18 @@ module.exports = class Graph {
 
 	// TODO
 	async mergeConnect(edge) {
-		console.log(edge)
 		
 		// NOTE: we cannnot use Cypher's merge, since it includes attributes in comparision
-		// check if relationship is found
+		// TODO: Currently we do not update attributes for existing links
 		if(edge.from && edge.to && edge.relation) {
-			const query = `MATCH (from)-[:${edge.relation}]->(to) WHERE from.id = "${edge.from}" AND to.id = "${edge.to}" RETURN from, to`
-			// if relation is found, then update attributes if there are any
-	
-			// if relation is not found, create it
+			
 			try {
+				const query = `MATCH (from)-[:${edge.relation}]->(to) WHERE from.id = "${edge.from}" AND to.id = "${edge.to}" RETURN from, to`
 				var response = await web.cypher(query)
-				console.log(response.result)
+
+				// if relation is not found, create it
 				if(response.result.length === 0) {
-					const add = `MATCH (from), (to) WHERE from.id = "${edge.from}" AND to.id = "${edge.to}" CREATE (from)-[:${edge.relation}]->(to) RETURN from, to`
-					var add_response = await web.cypher(add)
-					return add_response
+					return await this.connect(edge.from, edge.relation, edge.to,  MATCH_BY_ID, edge.attributes)
 				}
 			} catch(e) {
 				console.log(e)
@@ -248,6 +245,7 @@ module.exports = class Graph {
 			if(!to.match(/^#/)) to = '#' + to
 		}
 		if(attributes) attributes_str = this.createAttributeCypher(attributes)
+		console.log(attributes_str)
 
 		var query = `MATCH (from), (to) WHERE id(from) = "${from}" AND id(to) = "${to}" CREATE (from)-[:${relation} ${attributes_str}]->(to) RETURN from, to`
 		if(match_by_id) {
@@ -379,6 +377,8 @@ module.exports = class Graph {
 		var attrs = []
 		var cypher = ''
 		for (var key in attributes) {
+			console.log(key)
+			console.log('.............')
 			if(Array.isArray(attributes[key])) {
 				if(attributes[key].length > 0) {
 					var values_str = attributes[key].map(i => `'${i}'`).join(',')
@@ -527,7 +527,7 @@ module.exports = class Graph {
 			const file_path = path.resolve('./graph', filename)
 			const data = await fsPromises.readFile(file_path, 'utf8')
 			const graph_data = yaml.load(data)
-			
+
 			if(mode == 'clear') {
 				await web.clearGraph()
 				await this.setSystemNodes()

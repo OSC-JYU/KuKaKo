@@ -108,6 +108,9 @@ edges:
   - Device:HAS_MANUAL:Webdoc:
       label: manual
       label_rev: manual for device
+  - Project:HAS_SITE:Site:
+      label: has site
+      label_rev: part of
   - Device:HAS_LOCATON_IN_ROOM:Room:
       label: is located in room
       label_rev: devices

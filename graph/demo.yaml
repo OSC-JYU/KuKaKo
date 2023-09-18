@@ -3,8 +3,8 @@
 
 nodes:
   - Person:
-      label: Peter K
-      id: peter@ku.ka
+      label: Nebula Highcrest
+      id: nebula@ku.ka
   - Person:
       label: Mac Ihme
       id: mac@ku.ka
@@ -18,35 +18,35 @@ nodes:
       label: Mixi Kumma
       id: mixi@ku.ka
   - Person:
-      label: Kettu Ihme
-      id: kettu@ku.ka
+      label: Seraphine Starbourne
+      id: seraphine@ku.ka
 
   - Team:
-      label: Team Ihan toinen
+      label: Team Besserwisser
       description: Odd team of excellent personalities!
       id: team1
   - Team:
-      label: Team Kuka
+      label: Fantasy Sky Castles Construction Crew
       description: Second team of excellent personalities!
       id: team_kuka
 
   - Project:
-      label: project by Me!
-      description: Strange and difficult project!
+      label: DIY Science Experiments Extravaganza
+      description: A project encouraging young people to explore science through hands-on experiments and creative, educational activities.
       id: project1
 
   - Project:
-      label: Big project
+      label: Innovation Catalysts Collective
       description: Things are big in here
       id: project2
 
   - Query:
       label: All projects
-      query: MATCH (n:Project) OPTIONAL MATCH (n)--(p:Person) RETURN n,p
+      query: MATCH (n:Project) OPTIONAL MATCH (n)-[r]-(p:Person) RETURN n,r,p
       id: q2
   - Query:
-      label: All persons
-      query: MATCH (p:Person) OPTIONAL MATCH (p)--(n) RETURN p,n
+      label: All persons with links
+      query: MATCH (p:Person) OPTIONAL MATCH (p)-[r]-(n) RETURN p,r,n
       id: q3
 
 
@@ -59,42 +59,42 @@ edges:
         to_type: Team
         to: team_kuka
     - Edge:
-        from_type: Person
         from: mic@kuka.ka
         relation: IS_MEMBER_OF_TEAM
-        to_type: Team
         to: team_kuka
     - Edge:
-        from_type: Person
-        from: peter@ku.ka
+        from: nebula@ku.ka
         relation: IS_MEMBER_OF_TEAM
-        to_type: Team
         to: team_kuka
     - Edge:
-        from_type: Person
-        from: kettu@ku.ka
+        from: mixi@ku.ka
         relation: IS_MEMBER_OF_TEAM
-        to_type: Team
-        to: team_kuka
+        to: team1
     - Edge:
-        from_type: Person
-        from: kettu@ku.ka
-        relation: IS_COORDINATOR_OF_PROJECT
-        to_type: Project
+        from: xavier@ku.ka
+        relation: IS_MEMBER_OF_TEAM
+        to: team1
+    - Edge:
+        from: xavier@ku.ka
+        relation: IS_PARTICIPANT_OF_PROJECT
         to: project1
     - Edge:
-        from_type: Person
+        from: seraphine@ku.ka
+        relation: IS_MEMBER_OF_TEAM
+        to: team_kuka
+    - Edge:
+        from: seraphine@ku.ka
+        relation: IS_COORDINATOR_OF_PROJECT
+        to: project1
+    - Edge:
         from: local.user@localhost
         relation: IS_PARTICIPANT_OF_PROJECT
-        to_type: Project
         to: project1
         attributes:
             info: I do all the work.
     - Edge:
-        from_type: Person
         from: local.user@localhost
         relation: IS_PARTICIPANT_OF_PROJECT
-        to_type: Project
         to: project2
         attributes:
             info: I do very little here...
