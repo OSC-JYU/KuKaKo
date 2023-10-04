@@ -50,6 +50,16 @@ schema.getSchemaTypes = async function() {
 	return await web.cypher( query)
 }
 
+schema.getSchemaType = async function(schema) {
+	var query = `MATCH (s:Schema) WHERE s._type = "${schema}" RETURN s`
+	var response = await web.cypher( query)
+	if(response.result[0]) {
+		return response.result[0]
+	} else {
+		throw('Type not found')
+	}
+}
+
 schema.getSchemaAttributes = async function(schema, data_obj) {
 	var query = `MATCH (s:Schema) WHERE s._type = "${schema}" RETURN s`
 	var response = await web.cypher( query)

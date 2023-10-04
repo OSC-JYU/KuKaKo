@@ -128,34 +128,65 @@ module.exports = class Graph {
 		return web.cypher( body.query)
 	}
 
-	async create(type, data) {
-		console.log(data)
-        var data_str_arr = []
-		// expression data to string
-		for(var key in data) {
-			if(data[key]) {
-				if(Array.isArray(data[key]) && data[key].length > 0) {
-					data[key] = data[key].map(i => `'${i}'`).join(',')
-					data_str_arr.push(`${key}:[${data[key]}]`)
-				} else if (typeof data[key] == 'string') {
-				    if(data[key].length > MAX_STR_LENGTH) throw('Too long data!')
-				    data_str_arr.push(`${key}:"${data[key].replace(/"/g, '\\"')}"`)
-				} else {
-					data_str_arr.push(`${key}:${data[key]}`)
-				}
-            }
+	async hasPermissions(type_data, auth_header) {
+		var me = await this.myId(auth_header)
+		if(me.access === 'admin') {
+			return true
+		} else if(me.access === 'creator' && type_data.label !== 'Schema') {
+			return true
+		} else if(me.access === 'user' && type_data._public) {
+			return true
 		}
-		// set some system attributes to all Persons
-		if(type === 'Person') {
-			if(!data['_group']) data_str_arr.push(`_group: "user"`) // default user group for all persons
-			if(!data['_access']) data_str_arr.push(`_access: "user"`) // default access for all persons
-		}
-		// _active
-		if(!data['_active']) data_str_arr.push(`_active: true`)
+		return false
+	}
 
-		var query = `CREATE (n:${type} {${data_str_arr.join(',')}}) return n`
-        console.log(query)
-		return web.cypher( query)
+	async create(type, data, auth_header) {
+		try {
+			console.log(data)
+			let type_attributes = {}
+			if(type === 'Schema') {
+				type_attributes.label = 'Schema'
+			} else {
+				type_attributes = await schema.getSchemaType(type)
+			}
+			
+			console.log(type_attributes)
+			const privileged = await this.hasPermissions(type_attributes, auth_header)
+			if(!privileged) {
+				throw(`no rights to add "${type}"`)
+			}
+	
+			var data_str_arr = []
+			// expression data to string
+			for(var key in data) {
+				if(data[key]) {
+					if(Array.isArray(data[key]) && data[key].length > 0) {
+						data[key] = data[key].map(i => `'${i}'`).join(',')
+						data_str_arr.push(`${key}:[${data[key]}]`)
+					} else if (typeof data[key] == 'string') {
+						if(data[key].length > MAX_STR_LENGTH) throw('Too long data!')
+						data_str_arr.push(`${key}:"${data[key].replace(/"/g, '\\"')}"`)
+					} else {
+						data_str_arr.push(`${key}:${data[key]}`)
+					}
+				}
+			}
+			// set some system attributes to all Persons
+			if(type === 'Person') {
+				if(!data['_group']) data_str_arr.push(`_group: "user"`) // default user group for all persons
+				if(!data['_access']) data_str_arr.push(`_access: "user"`) // default access for all persons
+			}
+			// _active
+			if(!data['_active']) data_str_arr.push(`_active: true`)
+	
+			var query = `CREATE (n:${type} {${data_str_arr.join(',')}}) return n`
+			console.log(query)
+			return web.cypher( query) 
+			
+		} catch(e) {
+			throw('Creation failed ' + e)
+		}
+
 	}
 
 

@@ -265,7 +265,7 @@ router.post('/api/graph/query', async function (ctx) {
 
 router.post('/api/graph/vertices', async function (ctx) {
 	var type = ctx.request.body.type
-	var n = await graph.create(type, ctx.request.body)
+	var n = await graph.create(type, ctx.request.body, ctx.request.headers[AUTH_HEADER])
 	var node = n.result[0]
 	docIndex.add({id: node['@rid'],label:node.label})
 	ctx.body = n
