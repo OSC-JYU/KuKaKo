@@ -40,6 +40,8 @@ nodes:
       description: Things are big in here
       id: project2
 
+
+
   - Query:
       label: All projects
       query: MATCH (n:Project) OPTIONAL MATCH (n)-[r]-(p:Person) RETURN n,r,p

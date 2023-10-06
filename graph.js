@@ -128,7 +128,7 @@ module.exports = class Graph {
 		return web.cypher( body.query)
 	}
 
-	async hasPermissions(type_data, auth_header) {
+	async hasCreatePermissions(type_data, auth_header) {
 		var me = await this.myId(auth_header)
 		if(me.access === 'admin') {
 			return true
@@ -151,7 +151,7 @@ module.exports = class Graph {
 			}
 			
 			console.log(type_attributes)
-			const privileged = await this.hasPermissions(type_attributes, auth_header)
+			const privileged = await this.hasCreatePermissions(type_attributes, auth_header)
 			if(!privileged) {
 				throw(`no rights to add "${type}"`)
 			}
@@ -268,22 +268,43 @@ module.exports = class Graph {
 	}
 
 
+	async hasConnectPermissions(from, to, auth_header) {
+		var me = await this.myId(auth_header)
+		// one can join oneself
+		if(me.rid === from || me.rid === to)
+			return true
+		if(me.access === 'creator' || me.access === 'admin') {
+			return true
+		} 
+		// TODO: this must check that Schema can be connected only by admin
+		return false
+	}
+
 	// data = {from:[RID] ,relation: '', to: [RID]}
-	async connect(from, relation, to, match_by_id, attributes) {
-		var attributes_str = ''
-		if(!match_by_id) {
-			if(!from.match(/^#/)) from = '#' + from
-			if(!to.match(/^#/)) to = '#' + to
-		}
-		if(attributes) attributes_str = this.createAttributeCypher(attributes)
-		console.log(attributes_str)
+	async connect(from, relation, to, match_by_id, attributes, auth_header) {
 
-		var query = `MATCH (from), (to) WHERE id(from) = "${from}" AND id(to) = "${to}" CREATE (from)-[:${relation} ${attributes_str}]->(to) RETURN from, to`
-		if(match_by_id) {
-			query = `MATCH (from), (to) WHERE from.id = "${from}" AND to.id = "${to}" CREATE (from)-[:${relation} ${attributes_str}]->(to) RETURN from, to`
+		try {
+			var attributes_str = ''
+			if(!match_by_id) {
+				if(!from.match(/^#/)) from = '#' + from
+				if(!to.match(/^#/)) to = '#' + to
+			}
+			const permissions = await this.hasConnectPermissions(from, to, auth_header)
+				
+			if(attributes) attributes_str = this.createAttributeCypher(attributes)
+			console.log(attributes_str)
+	
+			var query = `MATCH (from), (to) WHERE id(from) = "${from}" AND id(to) = "${to}" CREATE (from)-[:${relation} ${attributes_str}]->(to) RETURN from, to`
+			if(match_by_id) {
+				query = `MATCH (from), (to) WHERE from.id = "${from}" AND to.id = "${to}" CREATE (from)-[:${relation} ${attributes_str}]->(to) RETURN from, to`
+			}
+	
+			return web.cypher( query)
+		} catch (e) {
+			console.log(e)
+			throw('Connection creation failed ')
 		}
 
-		return web.cypher( query)
 	}
 
 

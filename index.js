@@ -299,7 +299,10 @@ router.post('/api/graph/edges', async function (ctx) {
 	var n = await graph.connect(
 		ctx.request.body.from,
 		ctx.request.body.relation,
-		ctx.request.body.to)
+		ctx.request.body.to,
+		null,
+		null,
+		ctx.request.headers[AUTH_HEADER])
 	ctx.body = n
 })
 
