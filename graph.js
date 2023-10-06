@@ -282,21 +282,34 @@ module.exports = class Graph {
 
 	// data = {from:[RID] ,relation: '', to: [RID]}
 	async connect(from, relation, to, match_by_id, attributes, auth_header) {
+		console.log('Connectiong vertices...')
 
 		try {
 			var attributes_str = ''
+			var relation_type = ''
+
 			if(!match_by_id) {
 				if(!from.match(/^#/)) from = '#' + from
 				if(!to.match(/^#/)) to = '#' + to
 			}
 			const permissions = await this.hasConnectPermissions(from, to, auth_header)
-				
+			
+			if(typeof relation == 'object') {
+				relation_type = relation.type
+				if(relation.attributes)
+					attributes_str = this.createAttributeCypher(relation.attributes)
+			} else if (typeof relation == 'string') {
+				relation_type = relation
+			}
+
 			if(attributes) attributes_str = this.createAttributeCypher(attributes)
 			console.log(attributes_str)
 	
-			var query = `MATCH (from), (to) WHERE id(from) = "${from}" AND id(to) = "${to}" CREATE (from)-[:${relation} ${attributes_str}]->(to) RETURN from, to`
+			// when we link normally, we use RID
+			var query = `MATCH (from), (to) WHERE id(from) = "${from}" AND id(to) = "${to}" CREATE (from)-[:${relation_type} ${attributes_str}]->(to) RETURN from, to`
+			// when we import stuff, then we connect by id
 			if(match_by_id) {
-				query = `MATCH (from), (to) WHERE from.id = "${from}" AND to.id = "${to}" CREATE (from)-[:${relation} ${attributes_str}]->(to) RETURN from, to`
+				query = `MATCH (from), (to) WHERE from.id = "${from}" AND to.id = "${to}" CREATE (from)-[:${relation_type} ${attributes_str}]->(to) RETURN from, to`
 			}
 	
 			return web.cypher( query)
