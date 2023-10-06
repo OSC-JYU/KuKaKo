@@ -13,11 +13,18 @@ KuKaKo is a visual, open source tool for communicating (sometimes messy) connect
 * Visual graph can be re-arranged by user per query or node view
 * Navigation is based on powerful queries and is adjustable per user group
 * Nodes and relationships can be deactivated (archived) instead of removing
-* Process documentation by Stories
+* Process documentation by Stories (experimental)
+
+
 
 .. image:: images/homepage.png
 
 KuKaKo uses **directed graph** for storing and displaying data. A directed graph is like a visual network of points connected by arrows. The points are called nodes, while the arrows are edges. Nodes have type like "Website" or "Person" and edges have label like "IS AUTHOR OF" or "IS PART OF".
+
+.. note::
+
+    KuKaKo is NOT a diagram or flow chart software.
+
 
 When nodes are linked with these edges, the result is a directed graph that is exceptionally well-suited for representing complex relationships. This approach allows KuKaKo to efficiently store, organize, and display various types of information, making it a versatile tool for visualizing connections between different entities, whether it's mapping the relationships between websites and authors, or illustrating how individuals are associated with various groups or organizations.
 

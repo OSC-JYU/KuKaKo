@@ -7,18 +7,54 @@ When you enter to KuKaKo, you'll land on your homepage. This is the page where y
 .. image:: images/homepage.png
 
 Editing homepage
-^^^^^^^
+^^^^^^^^^^^^^^^^
 
-There are wo edit buttons on the right side. The upper (the pencil icon) is for text content like your name and description. The lower one is for links, that you can edit.
+There are two edit buttons on the right side. The upper (the pencil icon) is for text content like your name and description. The lower one is for links, that you can edit.
 
 .. image:: images/homepage_edit_buttons.jpg
    :width: 300
 
 
 
+Editing textual info
+^^^^^^^^^^^^^^^^^^^^^^
 
-Another method for adding links is through node homepages. Let's say you're exploring the listed expertise areas in KuKaKo and come across one titled "Gothic Architecture," which coincidentally aligns with one of your expertise areas. When you double-click on "Gothic Architecture," it will take you to the homepage of that expertise. Now, if your system is configured to allow you to create links to expertise areas, you'll notice a button on the right-hand side. By clicking on it, you can establish a link to that particular node.
+Click the "pencil" icon on your homepage. That makes all text fields editable (more pencil icons). When you are ready, just click "save". Click "ready" in order to exit editing mode.
+
+.. image:: images/homepage_edit_text.jpg
+
+Changing you name works a little bit differently. There is no save button. Instead, just hit enter when you are done with changing your name.
 
 
+Connecting yourself
+^^^^^^^^^^^^^^^^^^^
 
+By default you'll see only created connections (relations) in your homepage. If you want to edit connections, then find the "links" icon next to "relations". 
+
+.. image:: images/creator_edit_rel.jpg
+
+When you click the icon you'll see all possible connections that you can make. 
+
+.. image:: images/homepage_relations.jpg
+
+
+Editing connections by search
+^^^^^^^^^^^^^^^^^^^^^^^
+
+Another method for adding connections is to connect from other way round. For example, if you get a search hit something interesting like expertise called "Gothic Architecture,
+
+.. image:: images/homepage_relations_search.jpg
+
+
+And which coincidentally aligns with one of your expertise areas. 
+
+.. image:: images/homepage_relations_second_way.jpg
+
+
+Then, when you are in the the homepage of "Gothic Architecture" and KuKaKo is configured to allow you to create links to expertise areas in its schema, you'll notice a button on the right-hand side. By clicking on it, you can establish a link to that particular node.
+
+
+.. image:: images/homepage_relations_second_way_result.jpg
+
+Easy!
 

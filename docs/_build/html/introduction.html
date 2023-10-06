@@ -11,16 +11,17 @@
     <script src="_static/js/html5shiv.min.js"></script>
   <![endif]-->
   
-        <script src="_static/jquery.js?v=5d32c60e"></script>
-        <script src="_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
-        <script src="_static/documentation_options.js?v=5929fcd5"></script>
-        <script src="_static/doctools.js?v=888ff710"></script>
-        <script src="_static/sphinx_highlight.js?v=dc90522c"></script>
+        <script data-url_root="./" id="documentation_options" src="_static/documentation_options.js"></script>
+        <script src="_static/jquery.js"></script>
+        <script src="_static/underscore.js"></script>
+        <script src="_static/_sphinx_javascript_frameworks_compat.js"></script>
+        <script src="_static/doctools.js"></script>
+        <script src="_static/sphinx_highlight.js"></script>
     <script src="_static/js/theme.js"></script>
     <link rel="index" title="Index" href="genindex.html" />
     <link rel="search" title="Search" href="search.html" />
     <link rel="next" title="User Documentation" href="usage.html" />
-    <link rel="prev" title="Welcome to kukako’s documentation!" href="index.html" /> 
+    <link rel="prev" title="KuKako Documentation" href="index.html" /> 
 </head>
 
 <body class="wy-body-for-nav"> 
@@ -84,7 +85,7 @@
            <div itemprop="articleBody">
              
   <section id="introduction">
-<h1>Introduction<a class="headerlink" href="#introduction" title="Link to this heading"></a></h1>
+<h1>Introduction<a class="headerlink" href="#introduction" title="Permalink to this heading"></a></h1>
 <p class="centered">
 <strong>KuKaKo: Make your organisation browseable!</strong></p><p>KuKaKo is a visual, open source tool for communicating (sometimes messy) connections between people and things in community.</p>
 <ul class="simple">
@@ -93,10 +94,14 @@
 <li><p>Visual graph can be re-arranged by user per query or node view</p></li>
 <li><p>Navigation is based on powerful queries and is adjustable per user group</p></li>
 <li><p>Nodes and relationships can be deactivated (archived) instead of removing</p></li>
-<li><p>Process documentation by Stories</p></li>
+<li><p>Process documentation by Stories (experimental)</p></li>
 </ul>
 <img alt="_images/homepage.png" src="_images/homepage.png" />
 <p>KuKaKo uses <strong>directed graph</strong> for storing and displaying data. A directed graph is like a visual network of points connected by arrows. The points are called nodes, while the arrows are edges. Nodes have type like “Website” or “Person” and edges have label like “IS AUTHOR OF” or “IS PART OF”.</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>KuKaKo is NOT a diagram or flow chart software.</p>
+</div>
 <p>When nodes are linked with these edges, the result is a directed graph that is exceptionally well-suited for representing complex relationships. This approach allows KuKaKo to efficiently store, organize, and display various types of information, making it a versatile tool for visualizing connections between different entities, whether it’s mapping the relationships between websites and authors, or illustrating how individuals are associated with various groups or organizations.</p>
 <p><strong>Schema</strong> defines what types of nodes are available and how they can be linked. Schema itself is a graph and you can find it by clicking the gear icon on the top-right corner and choosing “Schema”.</p>
 <img alt="_images/schema.jpg" src="_images/schema.jpg" />
@@ -105,11 +110,11 @@
 <p>Editing schema requires admin rights.</p>
 </div>
 <section id="user-interface">
-<h2>User Interface<a class="headerlink" href="#user-interface" title="Link to this heading"></a></h2>
+<h2>User Interface<a class="headerlink" href="#user-interface" title="Permalink to this heading"></a></h2>
 <p>Given that the visual graph in KuKaKo can become quite complex, especially when it encompasses thousands of nodes and edges, we’ve implemented a user-friendly approach to help users navigate and focus on specific subsets of the data. Users will find their personalized homepages and menus, which serve as entry points, displaying manageable subgraphs.</p>
 <p>These subgraphs offer a condensed view, allowing users to dive deeper into the graph by simply double-clicking on nodes within the visual representation. This intuitive system empowers users to explore and interact with the data at their preferred granularity, ensuring a more streamlined and efficient experience.</p>
 <section id="navigation">
-<h3>Navigation<a class="headerlink" href="#navigation" title="Link to this heading"></a></h3>
+<h3>Navigation<a class="headerlink" href="#navigation" title="Permalink to this heading"></a></h3>
 <p>Every user has <strong>home page</strong>, where only nodes directly linked to the user are displayed. The visual graph can be arranged by the user just by dragging nodes.</p>
 <p>The main user interface consists of menu, visul graph display and list view.</p>
 <p>List view
@@ -117,7 +122,7 @@ On the right side is the list view. It show the same data as graph view, but in 
 <p>User can navigate with</p>
 </section>
 <section id="queries">
-<h3>Queries<a class="headerlink" href="#queries" title="Link to this heading"></a></h3>
+<h3>Queries<a class="headerlink" href="#queries" title="Permalink to this heading"></a></h3>
 <p>Queries use powerful Cypher query language and they are the main tool for showing graph data nicely to users. Queries are linked to Menu nodes. Queries are nodes with type Query.
 Menus</p>
 <p>Menus are query holders in the user interface. Menus are linked to UserGroups and are visible only Persons within that UserGrop. Menus are nodes with type “Menu”.
@@ -126,7 +131,7 @@ User groups and roles</p>
 <p>User groups define what user can see in the system. Each user group can have their own menus and queries on them. User groups are nodes with type UserGroup.</p>
 </section>
 <section id="user-roles">
-<h3>User Roles<a class="headerlink" href="#user-roles" title="Link to this heading"></a></h3>
+<h3>User Roles<a class="headerlink" href="#user-roles" title="Permalink to this heading"></a></h3>
 <p>User roles define what user can do in the system and user can have only one role. There are three user roles in KuKaKo.</p>
 <ul class="simple">
 <li><dl class="simple">
@@ -153,7 +158,7 @@ User groups and roles</p>
            </div>
           </div>
           <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
-        <a href="index.html" class="btn btn-neutral float-left" title="Welcome to kukako’s documentation!" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="index.html" class="btn btn-neutral float-left" title="KuKako Documentation" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
         <a href="usage.html" class="btn btn-neutral float-right" title="User Documentation" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
     </div>
 

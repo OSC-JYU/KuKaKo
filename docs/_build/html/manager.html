@@ -11,11 +11,12 @@
     <script src="_static/js/html5shiv.min.js"></script>
   <![endif]-->
   
-        <script src="_static/jquery.js?v=5d32c60e"></script>
-        <script src="_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
-        <script src="_static/documentation_options.js?v=5929fcd5"></script>
-        <script src="_static/doctools.js?v=888ff710"></script>
-        <script src="_static/sphinx_highlight.js?v=dc90522c"></script>
+        <script data-url_root="./" id="documentation_options" src="_static/documentation_options.js"></script>
+        <script src="_static/jquery.js"></script>
+        <script src="_static/underscore.js"></script>
+        <script src="_static/_sphinx_javascript_frameworks_compat.js"></script>
+        <script src="_static/doctools.js"></script>
+        <script src="_static/sphinx_highlight.js"></script>
     <script src="_static/js/theme.js"></script>
     <link rel="index" title="Index" href="genindex.html" />
     <link rel="search" title="Search" href="search.html" />
@@ -46,7 +47,12 @@
 <ul class="current">
 <li class="toctree-l1"><a class="reference internal" href="introduction.html">Introduction</a></li>
 <li class="toctree-l1"><a class="reference internal" href="usage.html">User Documentation</a></li>
-<li class="toctree-l1 current"><a class="current reference internal" href="#">Content Manager (Creator)</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">Content Manager (Creator)</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#editing-textual-info-and-renaming">Editing textual info and renaming</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#editing-relations">Editing relations</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#adding-new-nodes">Adding new nodes</a></li>
+</ul>
+</li>
 <li class="toctree-l1"><a class="reference internal" href="admin.html">Admin</a></li>
 <li class="toctree-l1"><a class="reference internal" href="developers.html">Install</a></li>
 </ul>
@@ -76,8 +82,32 @@
            <div itemprop="articleBody">
              
   <section id="content-manager-creator">
-<h1>Content Manager (Creator)<a class="headerlink" href="#content-manager-creator" title="Link to this heading"></a></h1>
+<h1>Content Manager (Creator)<a class="headerlink" href="#content-manager-creator" title="Permalink to this heading"></a></h1>
 <p>Content managers can create new nodes, edit nodes and edit relations between nodes.</p>
+<img alt="_images/creator_badge.jpg" src="_images/creator_badge.jpg" />
+<section id="editing-textual-info-and-renaming">
+<h2>Editing textual info and renaming<a class="headerlink" href="#editing-textual-info-and-renaming" title="Permalink to this heading"></a></h2>
+<p>As a content manager you can edit all textual info in any node (execpt shema). Just click the pen icon and change the text in any node.</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<dl class="simple">
+<dt><strong>Think before renaming things that have connections!</strong></dt><dd><p>For example, if you rename language French to Italy, then all users that have linked themselves to French speakers are all suddenly Italian speakers.</p>
+</dd>
+</dl>
+</div>
+<img alt="_images/creator_edit_description.jpg" src="_images/creator_edit_description.jpg" />
+</section>
+<section id="editing-relations">
+<h2>Editing relations<a class="headerlink" href="#editing-relations" title="Permalink to this heading"></a></h2>
+<p>Editing relations between things works similarly than editing connections on your homepage. Only difference is that content manager can edit relations on every page.</p>
+<img alt="_images/creator_edit_rel.jpg" src="_images/creator_edit_rel.jpg" />
+<p>Just click the icon next to “relations” and adjust relations.</p>
+</section>
+<section id="adding-new-nodes">
+<h2>Adding new nodes<a class="headerlink" href="#adding-new-nodes" title="Permalink to this heading"></a></h2>
+<p>Content manager can also add new nodes.</p>
+<p>Open the gear icon from the right top corner and select Add Node.</p>
+</section>
 </section>
 
 

@@ -11,11 +11,12 @@
     <script src="_static/js/html5shiv.min.js"></script>
   <![endif]-->
   
-        <script src="_static/jquery.js?v=5d32c60e"></script>
-        <script src="_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
-        <script src="_static/documentation_options.js?v=5929fcd5"></script>
-        <script src="_static/doctools.js?v=888ff710"></script>
-        <script src="_static/sphinx_highlight.js?v=dc90522c"></script>
+        <script data-url_root="./" id="documentation_options" src="_static/documentation_options.js"></script>
+        <script src="_static/jquery.js"></script>
+        <script src="_static/underscore.js"></script>
+        <script src="_static/_sphinx_javascript_frameworks_compat.js"></script>
+        <script src="_static/doctools.js"></script>
+        <script src="_static/sphinx_highlight.js"></script>
     <script src="_static/js/theme.js"></script>
     <link rel="index" title="Index" href="genindex.html" />
     <link rel="search" title="Search" href="search.html" />
@@ -50,6 +51,7 @@
 <li class="toctree-l1 current"><a class="current reference internal" href="#">Admin</a><ul>
 <li class="toctree-l2"><a class="reference internal" href="#setting-things-up">Setting things up</a><ul>
 <li class="toctree-l3"><a class="reference internal" href="#setting-up-navigation">Setting up navigation</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#user-groups-and-roles">User groups and roles</a></li>
 </ul>
 </li>
 <li class="toctree-l2"><a class="reference internal" href="#user-roles">User Roles</a></li>
@@ -83,10 +85,10 @@
            <div itemprop="articleBody">
              
   <section id="admin">
-<h1>Admin<a class="headerlink" href="#admin" title="Link to this heading"></a></h1>
+<h1>Admin<a class="headerlink" href="#admin" title="Permalink to this heading"></a></h1>
 <p>Admins can alter the change navigation settings, set user privileges and alter schema.</p>
 <section id="setting-things-up">
-<h2>Setting things up<a class="headerlink" href="#setting-things-up" title="Link to this heading"></a></h2>
+<h2>Setting things up<a class="headerlink" href="#setting-things-up" title="Permalink to this heading"></a></h2>
 <p>The first thing you must do as an admin, is to load schema.</p>
 <blockquote>
 <div><p>Choose gear icon -&gt; “import schema” -&gt; “organisation_en.yaml” and click “DELETE ALL and import”.</p>
@@ -94,20 +96,22 @@
 <p>Now check the schema page again (reload if necessary).You should see structure for organisation. There are teams, work groups, IT systems, web sites etc.</p>
 <img alt="_images/schema.jpg" src="_images/schema.jpg" />
 <section id="setting-up-navigation">
-<h3>Setting up navigation<a class="headerlink" href="#setting-up-navigation" title="Link to this heading"></a></h3>
+<h3>Setting up navigation<a class="headerlink" href="#setting-up-navigation" title="Permalink to this heading"></a></h3>
 <p>KuKaKo is graph based system and also navigation is graph. You can find it from “navigation” under the gear menu.</p>
 <img alt="_images/nav_graph.jpg" src="_images/nav_graph.jpg" />
 <p>Navigation graph consists of queries, menus and user groups.</p>
 <p>UserGroups, on the other hand, makes menus visible to users that belong to that UserGroup. Default user group is “User”.</p>
 <p><strong>Queries</strong> use powerful Cypher query language and they are the main tool for showing graph data nicely to users. Queries are nodes with type Query and theyr are linked to Menu nodes.</p>
 <p><strong>Menus</strong> are query holders in the user interface. Menus are linked to UserGroups and are visible only Persons within that UserGrop. Menus are nodes with type “Menu”.</p>
-<p>User groups and roles</p>
+</section>
+<section id="user-groups-and-roles">
+<h3>User groups and roles<a class="headerlink" href="#user-groups-and-roles" title="Permalink to this heading"></a></h3>
 <p>Persons are also users of KuKaKo.</p>
 <p>User groups define what user can see in the system. Each user group can have their own menus and queries on them. User groups are nodes with type UserGroup.</p>
 </section>
 </section>
 <section id="user-roles">
-<h2>User Roles<a class="headerlink" href="#user-roles" title="Link to this heading"></a></h2>
+<h2>User Roles<a class="headerlink" href="#user-roles" title="Permalink to this heading"></a></h2>
 <p>User roles define what user can do in the system and user can have only one role. There are three user roles in KuKaKo.</p>
 <ul class="simple">
 <li><dl class="simple">
