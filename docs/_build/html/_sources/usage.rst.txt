@@ -29,29 +29,35 @@ Changing you name works a little bit differently. There is no save button. Inste
 Connecting yourself
 ^^^^^^^^^^^^^^^^^^^
 
-By default you'll see only created connections (relations) in your homepage. If you want to edit connections, then find the "links" icon next to "relations". 
+By default you'll see only created connections (relations) in your homepage. If you want to edit connections, then find the "chain" icon next to "relations". 
 
-.. image:: images/creator_edit_rel.jpg
+.. figure:: images/creator_edit_rel.jpg
+
+   The "chain" icon
+
 
 When you click the icon you'll see all possible connections that you can make. 
 
 .. image:: images/homepage_relations.jpg
 
 
-Editing links by search
-^^^^^^^^^^^^^^^^^^^^^^^
+Editing connections by search
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Another method for adding connections is to connect from other way round. For example, if you get a search hit something interesting like expertise called "Gothic Architecture,
+Another way to establish connections is by connecting from a different perspective.
+
+For instance, if you come across something interesting in a search, like an expertise labeled "Gothic Architecture," which happens to align with one of your own expertise areas, you can take advantage of this opportunity. 
 
 .. image:: images/homepage_relations_search.jpg
 
-
-And which coincidentally aligns with one of your expertise areas. 
+1. Make a search
 
 .. image:: images/homepage_relations_second_way.jpg
 
+When you're on the homepage of "Gothic Architecture" and KuKaKo is configured to allow you to create links to expertise areas in its schema, you'll notice a button on the right-hand side. 
 
-Then, when you are in the the homepage of "Gothic Architecture" and KuKaKo is configured to allow you to create links to expertise areas in its schema, you'll notice a button on the right-hand side. By clicking on it, you can establish a link to that particular node.
+2. Clicking on this button enables you to establish a link to that specific node.
+
 
 
 .. image:: images/homepage_relations_second_way_result.jpg
