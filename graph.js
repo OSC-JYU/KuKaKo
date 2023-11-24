@@ -859,6 +859,9 @@ module.exports = class Graph {
 					}
 
 				if(ele.rel['attr']) out.rel_attr = ele.rel['attr']
+				// QueryMap locations
+				if(ele.rel['x']) out.x = ele.rel['x']
+				if(ele.rel['y']) out.y = ele.rel['y']
 
 				return out
 			})
