@@ -124,9 +124,12 @@ module.exports = class Graph {
 
 	}
 
+
+
 	async query(body) {
 		return web.cypher( body.query)
 	}
+
 
 	async hasCreatePermissions(type_data, auth_header) {
 		var me = await this.myId(auth_header)
@@ -139,6 +142,59 @@ module.exports = class Graph {
 		}
 		return false
 	}
+
+
+	async hasDeletePermissions(auth_header) {
+		var me = await this.myId(auth_header)
+		if(me.access === 'admin') {
+			return true
+		} else return false
+	}
+
+
+	async hasConnectPermissions(from, to, auth_header) {
+		var me = await this.myId(auth_header)
+		from = this.checkHastag(from)
+		to = this.checkHastag(to)
+
+		// one can join oneself
+		if(me.rid === from || me.rid === to)
+			return true
+		if(me.access === 'creator' || me.access === 'admin') {
+			return true
+		} 
+		// TODO: this must check that Schema can be connected only by admin
+		return false
+	}
+
+	async hasNodeAttributePermissions(node_rid, auth_header) {
+		var me = await this.myId(auth_header)
+		node_rid = this.checkHastag(node_rid)
+
+		// one can set one's own attributes
+		if(me.rid === node_rid)
+			return true
+		if(me.access === 'admin') {
+			return true
+		} 
+		return false
+	}
+
+
+	async hasEdgeAttributePermissions(from, to, auth_header) {
+		var me = await this.myId(auth_header)
+		from = this.checkHastag(from)
+		to = this.checkHastag(to)
+
+		if(me.rid === from || me.rid === to)
+			return true
+		if(me.access === 'creator' || me.access === 'admin') {
+			return true
+		} 
+		return false
+	}
+
+
 
 	async create(type, data, auth_header) {
 		try {
@@ -191,17 +247,23 @@ module.exports = class Graph {
 
 
 	async deleteNode(rid) {
-		if(!rid.match(/^#/)) rid = '#' + rid
-		var query = `MATCH (n) WHERE id(n) = '${rid}' RETURN labels(n) as type`
-		var response = await web.cypher(query)
-		if(response.result && response.result.length == 1) {
-			var type = response.result[0].type
-			var query_delete = `DELETE FROM ${type} WHERE @rid = "${rid}"`
-			console.log(query_delete)
-			return web.sql(query_delete)
+		try {
+			if(await this.hasDeletePermissions(auth_header)) {
+				rid = this.checkHastag(rid)
+				var query = `MATCH (n) WHERE id(n) = '${rid}' RETURN labels(n) as type`
+				var response = await web.cypher(query)
+				if(response.result && response.result.length == 1) {
+					var type = response.result[0].type
+					var query_delete = `DELETE FROM ${type} WHERE @rid = "${rid}"`
+					console.log(query_delete)
+					return web.sql(query_delete)
+				}
+			}	
+			return response
+		} catch (e) {
+			console.log(e)
+			throw('Node delete failed ' + e)
 		}
-
-		return response
 	}
 
 
@@ -242,6 +304,7 @@ module.exports = class Graph {
 	}
 
 
+
 	// TODO
 	async mergeConnect(edge) {
 		
@@ -268,51 +331,67 @@ module.exports = class Graph {
 	}
 
 
-	async hasConnectPermissions(from, to, auth_header) {
-		var me = await this.myId(auth_header)
-		// one can join oneself
-		if(me.rid === from || me.rid === to)
-			return true
-		if(me.access === 'creator' || me.access === 'admin') {
-			return true
-		} 
-		// TODO: this must check that Schema can be connected only by admin
-		return false
+
+
+
+	async getEdgeTargets(edge_rid) {
+		edge_rid = this.checkHastag(edge_rid)
+
+		const query = `MATCH (from)-[r]->(to) WHERE id(r) = "${edge_rid}" RETURN from, to`
+		var response = await web.cypher( query)
+		if(response.result.length > 0) {
+			var data = {from: response.result[0].from['@rid'], to: response.result[0].to['@rid']}
+			return data
+		} else {
+			throw(`Edge not found: ${edge_rid}`)
+		}
+
 	}
+
+
+	checkHastag(rid) {
+		if(!rid.match(/^#/)) rid = '#' + rid
+		return rid
+	}
+
+
 
 	// data = {from:[RID] ,relation: '', to: [RID]}
 	async connect(from, relation, to, match_by_id, attributes, auth_header) {
 		console.log('Connectiong vertices...')
 
 		try {
-			var attributes_str = ''
-			var relation_type = ''
+			if(await this.hasConnectPermissions(from, to, auth_header)) {
 
-			if(!match_by_id) {
-				if(!from.match(/^#/)) from = '#' + from
-				if(!to.match(/^#/)) to = '#' + to
-			}
-			const permissions = await this.hasConnectPermissions(from, to, auth_header)
-			
-			if(typeof relation == 'object') {
-				relation_type = relation.type
-				if(relation.attributes)
-					attributes_str = this.createAttributeCypher(relation.attributes)
-			} else if (typeof relation == 'string') {
-				relation_type = relation
-			}
+				var attributes_str = ''
+				var relation_type = ''
 
-			if(attributes) attributes_str = this.createAttributeCypher(attributes)
-			console.log(attributes_str)
-	
-			// when we link normally, we use RID
-			var query = `MATCH (from), (to) WHERE id(from) = "${from}" AND id(to) = "${to}" CREATE (from)-[:${relation_type} ${attributes_str}]->(to) RETURN from, to`
-			// when we import stuff, then we connect by id
-			if(match_by_id) {
-				query = `MATCH (from), (to) WHERE from.id = "${from}" AND to.id = "${to}" CREATE (from)-[:${relation_type} ${attributes_str}]->(to) RETURN from, to`
+				if(!match_by_id) {
+					from = this.checkHastag(from)
+					to = this.checkHastag(to)
+				}
+				const permissions = await this.hasConnectPermissions(from, to, auth_header)
+				
+				if(typeof relation == 'object') {
+					relation_type = relation.type
+					if(relation.attributes)
+						attributes_str = this.createAttributeCypher(relation.attributes)
+				} else if (typeof relation == 'string') {
+					relation_type = relation
+				}
+
+				if(attributes) attributes_str = this.createAttributeCypher(attributes)
+				console.log(attributes_str)
+		
+				// when we link normally, we use RID
+				var query = `MATCH (from), (to) WHERE id(from) = "${from}" AND id(to) = "${to}" CREATE (from)-[:${relation_type} ${attributes_str}]->(to) RETURN from, to`
+				// when we import stuff, then we connect by id
+				if(match_by_id) {
+					query = `MATCH (from), (to) WHERE from.id = "${from}" AND to.id = "${to}" CREATE (from)-[:${relation_type} ${attributes_str}]->(to) RETURN from, to`
+				}
+		
+				return web.cypher( query)
 			}
-	
-			return web.cypher( query)
 		} catch (e) {
 			console.log(e)
 			throw('Connection creation failed ')
@@ -321,61 +400,109 @@ module.exports = class Graph {
 	}
 
 
+
+	// delete edge based on edge type and source and target RIDs
 	async unconnect(data) {
-		if(!data.from.match(/^#/)) data.from = '#' + data.from
-		if(!data.to.match(/^#/)) data.to = '#' + data.to
-		var query = `MATCH (from)-[r:${data.rel_type}]->(to) WHERE id(from) = "${data.from}" AND id(to) = "${data.to}" DELETE r RETURN from`
-		return web.cypher( query)
+		try {
+			data.from = this.checkHastag(data.from)
+			data.to = this.checkHastag(data.to)
+
+			var query = `MATCH (from)-[r:${data.rel_type}]->(to) WHERE id(from) = "${data.from}" AND id(to) = "${data.to}" DELETE r RETURN from`
+			return web.cypher( query)
+		} catch(e) {
+			console.log(e)
+			throw('Connection removal failed ')
+		}
 	}
 
 
-	async deleteEdge(rid) {
-		if(!rid.match(/^#/)) rid = '#' + rid
-		var query = `MATCH (from)-[r]->(to) WHERE id(r) = '${rid}' DELETE r`
-		return web.cypher( query)
-	}
 
-
-	async setEdgeAttribute(rid, data) {
-		if(!rid.match(/^#/)) rid = '#' + rid
-		let query = `MATCH (from)-[r]->(to) WHERE id(r) = '${rid}' `
-		if(Array.isArray(data.value)) {
-			if(data.value.length > 0) {
-				data.value = data.value.map(i => `'${i}'`).join(',')
-				query = query + `SET r.${data.name} = [${data.value}]`
+	// delete edge based on edge RID
+	async deleteEdge(rid, auth_header) {
+		try {
+			var targets = await this.getEdgeTargets(rid)
+			if(await this.hasConnectPermissions(targets.from, targets.to, auth_header)) {
+				rid = this.checkHastag(rid)
+				var query = `MATCH (from)-[r]->(to) WHERE id(r) = '${rid}' DELETE r`
+				return web.cypher( query)
 			} else {
-				query = query + `SET r.${data.name} = []`
+				throw('No rights to delete edge')
 			}
-		} else if(typeof data.value == 'boolean' || typeof data.value == 'number') {
-			query = query + `SET r.${data.name} = ${data.value}`
-		} else if(typeof data.value == 'string') {
-					query = query + `SET r.${data.name} = '${data.value.replace(/'/g,"\\'")}'`
+
+		} catch(e) {
+			console.log(e)
+			throw('Deleting edge failed ')
 		}
-		return web.cypher( query)
 	}
 
 
-	async setNodeAttribute(rid, data) {
-		if(!rid.match(/^#/)) rid = '#' + rid
-		let query = `MATCH (node) WHERE id(node) = '${rid}' `
 
-		if(Array.isArray(data.value) && data.value.length > 0) {
-			data.value = data.value.map(i => `'${i}'`).join(',')
-			query = `SET node.${data.key} = [${data.value}]`
-		} else if(typeof data.value == 'boolean') {
-			query = query + `SET node.${data.key} = ${data.value}`
-		} else if(typeof data.value == 'string') {
-			query = query + `SET node.${data.key} = '${data.value.replace(/'/g,"\\'")}'`
+	async setEdgeAttribute(rid, data, auth_header) {
+		try {
+			var targets = await this.getEdgeTargets(rid)
+			if(this.hasEdgeAttributePermissions(targets.from, targets.to, auth_header)) {
+				rid = this.checkHastag(rid)
+				let query = `MATCH (from)-[r]->(to) WHERE id(r) = '${rid}' `
+				if(Array.isArray(data.value)) {
+					if(data.value.length > 0) {
+						data.value = data.value.map(i => `'${i}'`).join(',')
+						query = query + `SET r.${data.name} = [${data.value}]`
+					} else {
+						query = query + `SET r.${data.name} = []`
+					}
+				} else if(typeof data.value == 'boolean' || typeof data.value == 'number') {
+					query = query + `SET r.${data.name} = ${data.value}`
+				} else if(typeof data.value == 'string') {
+							query = query + `SET r.${data.name} = '${data.value.replace(/'/g,"\\'")}'`
+				}
+				return web.cypher( query)
+			} else {
+				throw('No rights to set edge attributes')
+			}
+
+		} catch(e) {
+			console.log(e)
+			throw('Edge attribut setting failed ' + e)
 		}
-		return web.cypher( query)
+
 	}
+
+
+
+	async setNodeAttribute(rid, data, auth_header) {
+		try {
+			if(this.hasNodeAttributePermissions(rid, auth_header)) {
+				rid = this.checkHastag(rid)
+				let query = `MATCH (node) WHERE id(node) = '${rid}' `
+		
+				if(Array.isArray(data.value) && data.value.length > 0) {
+					data.value = data.value.map(i => `'${i}'`).join(',')
+					query = `SET node.${data.key} = [${data.value}]`
+				} else if(typeof data.value == 'boolean') {
+					query = query + `SET node.${data.key} = ${data.value}`
+				} else if(typeof data.value == 'string') {
+					query = query + `SET node.${data.key} = '${data.value.replace(/'/g,"\\'")}'`
+				}
+				return web.cypher( query)
+			} else {
+				throw('No rights to set node attributes')
+			}
+
+		} catch(e) {
+			console.log(e)
+			throw('Node attribute setting failed ' + e)
+		}
+
+	}
+
 
 
 	async getNodeAttributes(rid) {
-		if(!rid.match(/^#/)) rid = '#' + rid
+		rid = this.checkHastag(rid)
 		var query = `MATCH (node) WHERE id(node) = '${rid}' RETURN node`
 		return web.cypher( query)
 	}
+
 
 
 	async getGraph(body, ctx) {
@@ -426,7 +553,7 @@ module.exports = class Graph {
 
 	checkRelationData(data) {
 		if(data.from) {
-			if(!data.from.match(/^#/)) data.from = '#' + data.from
+			data.from = this.checkHastag(data.from)
 		}
 		if(data.to) {
 			if(!data.to.match(/^#/)) data.to = '#' + data.to

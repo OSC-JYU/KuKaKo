@@ -285,7 +285,7 @@ router.get('/api/graph/vertices/:rid', async function (ctx) {
 })
 
 router.post('/api/graph/vertices/:rid', async function (ctx) {
-	var n = await graph.setNodeAttribute('#' + ctx.request.params.rid, ctx.request.body)
+	var n = await graph.setNodeAttribute(ctx.request.params.rid, ctx.request.body, ctx.request.headers[AUTH_HEADER])
 	var a = await graph.getNodeAttributes(ctx.request.params.rid)
 	if(a.result) {
 		a.result[0].id = a.result[0]['@rid']
@@ -307,12 +307,12 @@ router.post('/api/graph/edges', async function (ctx) {
 })
 
 router.delete('/api/graph/edges/:rid', async function (ctx) {
-	var n = await graph.deleteEdge('#' + ctx.request.params.rid)
+	var n = await graph.deleteEdge(ctx.request.params.rid, ctx.request.headers[AUTH_HEADER])
 	ctx.body = n
 })
 
 router.post('/api/graph/edges/:rid', async function (ctx) {
-	var n = await graph.setEdgeAttribute('#' + ctx.request.params.rid, ctx.request.body)
+	var n = await graph.setEdgeAttribute(ctx.request.params.rid, ctx.request.body, ctx.request.headers[AUTH_HEADER])
 	ctx.body = n
 })
 
