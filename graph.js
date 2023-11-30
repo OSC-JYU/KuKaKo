@@ -384,10 +384,10 @@ module.exports = class Graph {
 				console.log(attributes_str)
 		
 				// when we link normally, we use RID
-				var query = `MATCH (from), (to) WHERE id(from) = "${from}" AND id(to) = "${to}" CREATE (from)-[:${relation_type} ${attributes_str}]->(to) RETURN from, to`
+				var query = `MATCH (from), (to) WHERE id(from) = "${from}" AND id(to) = "${to}" CREATE (from)-[r:${relation_type} ${attributes_str}]->(to) RETURN from, r, to`
 				// when we import stuff, then we connect by id
 				if(match_by_id) {
-					query = `MATCH (from), (to) WHERE from.id = "${from}" AND to.id = "${to}" CREATE (from)-[:${relation_type} ${attributes_str}]->(to) RETURN from, to`
+					query = `MATCH (from), (to) WHERE from.id = "${from}" AND to.id = "${to}" CREATE (from)-[r:${relation_type} ${attributes_str}]->(to) RETURN from, r, to`
 				}
 		
 				return web.cypher( query)
