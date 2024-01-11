@@ -330,6 +330,11 @@ router.post('/api/graph/edges/unconnect/me', async function (ctx) {
 	ctx.body = n
 })
 
+router.get('/api/graph/text', async function (ctx) {
+	var n = await graph.exportText()
+	ctx.body = n
+})
+
 router.post('/api/layouts', async function (ctx) {
 	var me = await graph.myId(ctx.request.headers[AUTH_HEADER])
 	var n = await graph.setLayout(ctx.request.body, me)

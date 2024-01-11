@@ -26,6 +26,11 @@ module.exports = class Graph {
 			await web.cypher(query)
 		} catch (e) {
 			try {
+				if(e.code == 'ERR_GOT_REQUEST_ERROR') {
+					console.log('Request error! Check database. Did you set DB_PASSWORD? exiting...')
+					process.exit(1)					
+				}
+
 				if(e.code == 'ECONNREFUSED') {
 					console.log('database not ready, waiting 10 seconds...')
 					await timers.setTimeout(10000)
@@ -107,7 +112,7 @@ module.exports = class Graph {
 			var result = await web.cypher( query)
 			try {
 				for (var node of result.result) {
-					this.docIndex.add(node)
+					await this.docIndex.add(node)
 				}
 				console.log('Indexing done')
 			} catch(e) {
@@ -838,6 +843,32 @@ module.exports = class Graph {
 		return {file: filePath}
 	}
 
+
+
+	async exportText() {
+		// list all data for RAG
+		var data = []
+		var text = []
+		var type = 'Team'
+
+		// first all types
+		const query = `MATCH (n:${type}) OPTIONAL MATCH (n)-[r]-(p) return n,r,p`
+		var types = await web.cypher(query)
+		
+		var q = `MATCH (n:${type})-[r]-(p) RETURN n,r,p`
+		var res = await web.cypher(q, {serializer:'graph', format:'cytoscape'})
+
+		// for(var type of types.result) {
+		// 	text.push(type.label)
+		// 	var q = `MATCH (n:${type._type})-[r]-(p) RETURN n,r,p`
+		// 	var res = await web.cypher(q)
+		// 	console.log(res.result)
+		// 	data.push(res.result)
+		// }
+		return res
+
+		// last all person
+	}
 
 	async mergeFIX(type, schema_type) {
 		const c_query = `MATCH (n:${type}) return count(n) as count`

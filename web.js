@@ -265,6 +265,7 @@ function nodeGrouping(nodes, edges, vertex_types, options) {
 
 
 function convert2CytoScapeJs(data, options) {
+
 	if(!options) var options = {labels:{}}
 	var vertex_ids = []
 	var nodes = []
