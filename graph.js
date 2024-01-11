@@ -849,14 +849,23 @@ module.exports = class Graph {
 		// list all data for RAG
 		var data = []
 		var text = []
-		var type = 'Team'
+		var type = 'Person'
 
 		// first all types
 		const query = `MATCH (n:${type}) OPTIONAL MATCH (n)-[r]-(p) return n,r,p`
 		var types = await web.cypher(query)
 		
+		var schema_relations = await this.getSchemaRelations()
 		var q = `MATCH (n:${type})-[r]-(p) RETURN n,r,p`
-		var res = await web.cypher(q, {serializer:'graph', format:'cytoscape'})
+		var res = await web.cypher(q, {
+			serializer:'graph', 
+			format:'cytoscape',
+			schemas: schema_relations
+		})
+
+		for(var node of res.nodes) {
+			text.push(node.data.type_label)
+		}
 
 		// for(var type of types.result) {
 		// 	text.push(type.label)
