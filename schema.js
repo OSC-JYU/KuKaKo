@@ -4,7 +4,7 @@ const yaml = require('js-yaml')
 const fsPromises = require('fs/promises')
 
 const web = require("./web.js")
-
+const NOT_REQUIRED = true
 
 let schema = {}
 
@@ -50,13 +50,14 @@ schema.getSchemaTypes = async function() {
 	return await web.cypher( query)
 }
 
-schema.getSchemaType = async function(schema) {
+schema.getSchemaType = async function(schema, NOT_REQUIRED) {
 	var query = `MATCH (s:Schema) WHERE s._type = "${schema}" RETURN s`
 	var response = await web.cypher( query)
 	if(response.result[0]) {
 		return response.result[0]
 	} else {
-		throw('Type not found')
+		if(NOT_REQUIRED) return 'Node'
+		else throw('Type not found')
 	}
 }
 
@@ -82,12 +83,16 @@ schema.exportSchemaYAML = async function(filename) {
 	for(var vertex of schemas.result.vertices) {
 		if(!vertex_ids[vertex.r]) {
 			 var node_obj = {}
-			 node_obj[vertex.p._type] = {...vertex.p}
-			 // make sure there is label property
-			 if(!node_obj[vertex.p._type].label) node_obj[vertex.p._type].label = vertex.p._type
+			 console.log(vertex.p)
+			 node_obj[vertex.p._type] = {label: vertex.p._type}
+			 if(vertex.p.label) 
+			 	node_obj[vertex.p._type].label = vertex.p.label
 
-			 delete(node_obj[vertex.p._type]._active)
-			 delete(node_obj[vertex.p._type]._type)
+			if('URL' in vertex.p) 
+				node_obj[vertex.p._type].URL = vertex.p.URL
+
+			 //node_obj[vertex.p._type] = {...vertex.p}
+
 			 output.nodes.push(node_obj)
 			 vertex_ids[vertex.r] = vertex.p._type
 		}
