@@ -855,26 +855,32 @@ module.exports = class Graph {
 		const query = `MATCH (n:${type}) OPTIONAL MATCH (n)-[r]-(p) return n,r,p`
 		var types = await web.cypher(query)
 		
-		var schema_relations = await this.getSchemaRelations()
-		var q = `MATCH (n:${type})-[r]-(p) RETURN n,r,p`
-		var res = await web.cypher(q, {
-			serializer:'graph', 
-			format:'cytoscape',
-			schemas: schema_relations
-		})
+		var item = await this.getDataWithSchema("1:0")
+		var output = []
+		output.push(item._attributes['@type'])
+		if(item._attributes['@type'] == 'Person')
+			output.push('name: ' + item._attributes.label)
+		else
+			output.push('label: ' + item._attributes.label)
+		
+		output.push('description: ' + item._attributes.description)
 
-		for(var node of res.nodes) {
-			text.push(node.data.type_label)
+		for (var tag in item.tags) {
+			if(item.tags[tag].count) {
+				for(var relation of item.tags[tag].relations) {
+					if(relation.data.length) {
+						output.push(`${relation.label} (${relation.target_label})`)
+						for(var target of relation.data) {
+							output.push(`  - ${target.label}`)
+						}
+					}
+				}
+			}
 		}
 
-		// for(var type of types.result) {
-		// 	text.push(type.label)
-		// 	var q = `MATCH (n:${type._type})-[r]-(p) RETURN n,r,p`
-		// 	var res = await web.cypher(q)
-		// 	console.log(res.result)
-		// 	data.push(res.result)
-		// }
-		return res
+		item.text = output.join('\n')
+
+		return item.text
 
 		// last all person
 	}
