@@ -89,6 +89,7 @@ const upload = multer({
 
 // check that user has rights to use app
 app.use(async function handleError(context, next) {
+	console.log(context.request.headers[AUTH_HEADER])
 	if(process.env.MODE == 'development') {
 		if(process.env.DEV_USER) {
 			context.request.headers[AUTH_HEADER] = process.env.DEV_USER // dummy shibboleth for local use	
@@ -234,12 +235,12 @@ router.post('/api/schemas/export', async function (ctx) {
 })
 
 router.post('/api/schemas/import', async function (ctx) {
-	var n = await schema.importSchemaYAML(ctx.request.query.filename, ctx.request.query.mode)
+	var n = await schema.importSchemaYAML(ctx.request.query.filename, ctx.request.query.mode, ctx.request.headers[AUTH_HEADER])
 	ctx.body = n
 })
 
 router.post('/api/graph/import', async function (ctx) {
-	var n = await graph.importGraphYAML(ctx.request.query.filename, ctx.request.query.mode)
+	var n = await graph.importGraphYAML(ctx.request.query.filename, ctx.request.query.mode, ctx.request.headers[AUTH_HEADER])
 	ctx.body = n
 })
 

@@ -135,6 +135,13 @@ module.exports = class Graph {
 		return web.cypher( body.query)
 	}
 
+	async hasAdminPermissions(auth_header) {
+		var me = await this.myId(auth_header)
+		if(me.access === 'admin') {
+			return true
+		}
+		return false
+	}
 
 	async hasCreatePermissions(type_data, auth_header) {
 		var me = await this.myId(auth_header)
@@ -208,7 +215,7 @@ module.exports = class Graph {
 			if(type === 'Schema') {
 				type_attributes.label = 'Schema'
 			} else {
-				type_attributes = await schema.getSchemaType(type)
+				type_attributes = await schema.getSchemaType(type, 1)
 			}
 			
 			console.log(type_attributes)
@@ -245,6 +252,7 @@ module.exports = class Graph {
 			return web.cypher( query) 
 			
 		} catch(e) {
+			console.log(e)
 			throw('Creation failed ' + e)
 		}
 
@@ -718,24 +726,27 @@ module.exports = class Graph {
 		}
 	}
 
-	async importGraphYAML(filename, mode) {
+	async importGraphYAML(filename, mode, auth_header) {
 		console.log(`** importing graph ${filename} with mode ${mode} **`)
 		try {
 			const file_path = path.resolve('./graph', filename)
 			const data = await fsPromises.readFile(file_path, 'utf8')
 			const graph_data = yaml.load(data)
+			const admin = await this.hasAdminPermissions(auth_header)
 
-			if(mode == 'clear') {
-				await web.clearGraph()
-				await this.setSystemNodes()
-				await this.createSystemGraph()
-				await this.writeGraphToDB(graph_data)
-			} else {
-				// otherwise we merge
-				await this.mergeGraphToDB(graph_data)
+			if(admin) {
+				if(mode == 'clear') {
+					await web.clearGraph()
+					await this.setSystemNodes()
+					await this.createSystemGraph()
+					await this.writeGraphToDB(graph_data, auth_header)
+				} else {
+					// otherwise we merge
+					await this.mergeGraphToDB(graph_data)
+				}
+	
+				this.createIndex()
 			}
-
-			this.createIndex()
 
 		} catch (e) {
 			throw(e)
@@ -759,17 +770,17 @@ module.exports = class Graph {
 	}
 
 
-	async writeGraphToDB(graph) {
+	async writeGraphToDB(graph, auth_header) {
 		try {
 			for(var node of graph.nodes) {
 				const type = Object.keys(node)[0]
-				await this.create(type, node[type])
+				await this.create(type, node[type], auth_header)
 			}
 
 			for(var edge of graph.edges) {
 				// edges object format
 				if(edge.Edge) {
-					await this.connect(edge.Edge.from, edge.Edge.relation, edge.Edge.to, true, edge.Edge.attributes)
+					await this.connect(edge.Edge.from, edge.Edge.relation, edge.Edge.to, true, edge.Edge.attributes, auth_header)
 				// edges string format
 				} else {
 					const edge_key = Object.keys(edge)[0]
@@ -780,7 +791,7 @@ module.exports = class Graph {
 						const [to_type, ...to_rest] = splitted[2].split(':')
 						const from_id = from_rest.join(':').trim()
 						const to_id = to_rest.join(':').trim()
-						await this.connect(from_id, link, to_id, true, edge[edge_key])
+						await this.connect(from_id, link, to_id, true, edge[edge_key], auth_header)
 					} else {
 						throw('Graph edge error: ' + Object.keys(edge)[0])
 					}
@@ -847,34 +858,56 @@ module.exports = class Graph {
 
 	async exportText() {
 		// list all data for RAG
-		var data = []
-		var text = []
+		var items = []
+		var output = []
 		var type = 'Person'
 
 		// first all types
-		const query = `MATCH (n:${type}) OPTIONAL MATCH (n)-[r]-(p) return n,r,p`
-		var types = await web.cypher(query)
-		
-		var schema_relations = await this.getSchemaRelations()
-		var q = `MATCH (n:${type})-[r]-(p) RETURN n,r,p`
-		var res = await web.cypher(q, {
-			serializer:'graph', 
-			format:'cytoscape',
-			schemas: schema_relations
-		})
+		const type_query = "MATCH (s:Schema) WHERE NOT s._type IN ['UserGroup', 'Menu', 'Query', 'Tag'] return s._type AS type"
+		var schemas = await web.cypher(type_query)
 
-		for(var node of res.nodes) {
-			text.push(node.data.type_label)
+		for(var schema of schemas.result) {
+			const query = `MATCH (n:${schema.type})-[]-(p) RETURN DISTINCT id(n) AS rid`
+			var rids = await web.cypher(query)
+			
+			for(var rid of rids.result) {
+				var item = await this.getDataWithSchema(rid.rid)
+				
+				output.push('\n\n----')
+				output.push(`* ${item._attributes['@type']} *`)
+				if(item._attributes['@type'] == 'Person')
+					output.push('name: ' + item._attributes.label)
+				else
+					output.push('label: ' + item._attributes.label)
+				
+				if(item._attributes.description)
+					output.push('description: ' + item._attributes.description)
+		
+				for (var tag in item.tags) {
+					if(item.tags[tag].count) {
+						var rel_count = 1
+						for(var relation of item.tags[tag].relations) {
+							if(relation.data.length) {
+								output.push(`\n${rel_count}. ${relation.label} (${relation.target_label})`)
+								for(var target of relation.data) {
+									output.push(`  - ${target.label}`)
+									if(target.rel_attr) output.push('     ' + target.rel_attr)
+								}
+							rel_count++
+							}
+						}
+					}
+				}
+				items.push(item)
+			}
 		}
 
-		// for(var type of types.result) {
-		// 	text.push(type.label)
-		// 	var q = `MATCH (n:${type._type})-[r]-(p) RETURN n,r,p`
-		// 	var res = await web.cypher(q)
-		// 	console.log(res.result)
-		// 	data.push(res.result)
-		// }
-		return res
+
+
+		//item.text = output.join('\n')
+
+		return output.join('\n')
+		//return items
 
 		// last all person
 	}
