@@ -15,6 +15,7 @@ const Gitlab 		= require('./gitlab.js');
 const styles 		= require('./styles.js');
 const schema 		= require('./schema.js');
 const media 		= require('./media.js');
+const smartSearch 		= require('./smartSearch.js');
 
 
 let graph
@@ -176,6 +177,21 @@ router.get('/api/search', async function (ctx) {
 	console.log(result)
 	var n = await graph.getSearchData(result)
 	ctx.body = n.result
+})
+
+router.get('/api/semanticsearch/search', async function (ctx) {
+	var result = await smartSearch.search(ctx.request.query.search)
+	ctx.body = result
+})
+
+router.get('/api/semanticsearch/rag', async function (ctx) {
+	var result = await smartSearch.rag(ctx.request.query.search)
+	ctx.body = result
+})
+
+router.post('/api/semanticsearch/build', async function (ctx) {
+	var result = await smartSearch.buildVectors()
+	ctx.body = result
 })
 
 router.post('/api/query', async function (ctx) {

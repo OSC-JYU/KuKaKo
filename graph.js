@@ -906,14 +906,8 @@ module.exports = class Graph {
 			}
 		}
 
-
-
-		//item.text = output.join('\n')
-
 		return output.join('\n')
-		//return items
 
-		// last all person
 	}
 
 
@@ -936,8 +930,6 @@ module.exports = class Graph {
 				var content = []
 
 				content.push(item._attributes['@type'].toUpperCase() + ': ' + item._attributes.label)
-				//output.push('name: ' + item._attributes.label)
-
 				
 				if(item._attributes.description)
 					content.push('description: ' + item._attributes.description)
@@ -962,14 +954,8 @@ module.exports = class Graph {
 			}
 		}
 
-
-
-		//item.text = output.join('\n')
-
 		return items
-		//return items
 
-		// last all person
 	}
 
 
