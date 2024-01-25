@@ -331,8 +331,13 @@ router.post('/api/graph/edges/unconnect/me', async function (ctx) {
 	ctx.body = n
 })
 
-router.get('/api/graph/text', async function (ctx) {
+router.get('/api/graph/export/text', async function (ctx) {
 	var n = await graph.exportText()
+	ctx.body = n
+})
+
+router.get('/api/graph/export/json', async function (ctx) {
+	var n = await graph.exportJSON()
 	ctx.body = n
 })
 

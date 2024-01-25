@@ -876,13 +876,13 @@ module.exports = class Graph {
 			
 			for(var rid of rids.result) {
 				var item = await this.getDataWithSchema(rid.rid)
+				console.log(item)
 				
-				output.push('\n\n----')
-				output.push(`* ${item._attributes['@type'].toUpperCase()} *`)
-				if(item._attributes['@type'] == 'Person')
-					output.push('name: ' + item._attributes.label)
-				else
-					output.push('label: ' + item._attributes.label)
+				output.push('\n\n')
+
+				output.push(item._attributes['@type'].toUpperCase() + ': ' + item._attributes.label)
+				//output.push('name: ' + item._attributes.label)
+
 				
 				if(item._attributes.description)
 					output.push('description: ' + item._attributes.description)
@@ -915,6 +915,63 @@ module.exports = class Graph {
 
 		// last all person
 	}
+
+
+	async exportJSON() {
+		// list all data for RAG
+		var items = []
+
+		// first all types
+		const type_query = "MATCH (s:Schema) WHERE NOT s._type IN ['UserGroup', 'Menu', 'Query', 'Tag'] return s._type AS type"
+		var schemas = await web.cypher(type_query)
+
+		for(var schema of schemas.result) {
+			const query = `MATCH (n:${schema.type})-[]-(p) RETURN DISTINCT id(n) AS rid`
+			var rids = await web.cypher(query)
+			
+			for(var rid of rids.result) {
+				var item = await this.getDataWithSchema(rid.rid)
+				console.log(item)
+				var json = {metadata:{rid: rid.rid}, pageContent:''}
+				var content = []
+
+				content.push(item._attributes['@type'].toUpperCase() + ': ' + item._attributes.label)
+				//output.push('name: ' + item._attributes.label)
+
+				
+				if(item._attributes.description)
+					content.push('description: ' + item._attributes.description)
+		
+				for (var tag in item.tags) {
+					if(item.tags[tag].count) {
+						var rel_count = 1
+						for(var relation of item.tags[tag].relations) {
+							if(relation.data.length) {
+								content.push(`\n${rel_count}. ${relation.label} (${relation.target_label})`)
+								for(var target of relation.data) {
+									content.push(`  - ${target.label}`)
+									if(target.rel_attr) content.push('     ' + target.rel_attr)
+								}
+							rel_count++
+							}
+						}
+					}
+				}
+				json.pageContent = content.join('\n')
+				items.push(json)
+			}
+		}
+
+
+
+		//item.text = output.join('\n')
+
+		return items
+		//return items
+
+		// last all person
+	}
+
 
 	async mergeFIX(type, schema_type) {
 		const c_query = `MATCH (n:${type}) return count(n) as count`
