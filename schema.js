@@ -45,8 +45,13 @@ schema.getSchemaRelations = async function(label) {
 	return out
 }
 
-schema.getSchemaTypes = async function() {
+schema.getSchemaTypes_old = async function() {
 	var query = 'MATCH (schema:Schema) RETURN id(schema) as rid, COALESCE(schema.label, schema._type) as label, schema._type as type, schema ORDER by label'
+	return await web.cypher( query)
+}
+
+schema.getSchemaTypes = async function() {
+	var query = 'MATCH (schema:Schema) RETURN id(schema) as rid, COALESCE(schema.label, schema._type) as label, schema._type as type, schema.browse_order as browse_order, schema ORDER by schema.browse_order, label'
 	return await web.cypher( query)
 }
 
