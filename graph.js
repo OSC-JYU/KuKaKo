@@ -84,20 +84,23 @@ module.exports = class Graph {
 
 	async createSystemGraph() {
 		try {
-			// Menu "Me"
-			var query = 'MERGE (m:Menu {id:"me"}) SET m.label = "Me", m._active = true RETURN m'
-			var menu = await web.cypher( query, null, 1)
+
 			// Usergroup "Basic"
-			query = 'MERGE (m:UserGroup {id:"user"}) SET m.label = "User", m._active = true RETURN m'
-			var group = await web.cypher( query, null, 1)
+			var query = 'MERGE (m:UserGroup {id:"user"}) SET m.label = "User", m._active = true RETURN m'
+			var group = await web.cypher(query)
+
+			// Menu "Me"
+			// var query = 'MERGE (m:Menu {id:"me"}) SET m.label = "Me", m._active = true RETURN m'
+			// var menu = await web.cypher(query)
+
 
 			// Make sure that "Me" menu is linked to the "User" group
-			query = `MATCH (m:Menu), (g:UserGroup) WHERE id(m) = "${menu.result[0]['@rid']}" AND id(g) = "${group.result[0]['@rid']}" MERGE (m)-[:VISIBLE_FOR_GROUP]->(g)`
-			await web.cypher( query, null, 1)
+			// query = `MATCH (m:Menu), (g:UserGroup) WHERE id(m) = "${menu.result[0]['@rid']}" AND id(g) = "${group.result[0]['@rid']}" MERGE (m)-[:VISIBLE_FOR_GROUP]->(g)`
+			// await web.cypher(query)
 
 			// default local user
 			query = `MERGE (p:Person {id:"local.user@localhost"}) SET p._group = "user", p._access = "admin", p._active = true, p.label = "Local You", p.description = "It's really You!" RETURN p`
-			await web.cypher( query, null, 1)
+			await web.cypher(query)
 		} catch (e) {
 			console.log(query)
 			throw('System graph creation failed')
@@ -106,7 +109,7 @@ module.exports = class Graph {
 
 
 	async createIndex() {
-		console.log('Starting to index...')
+		console.log('Starting to index with flexsearch ...')
 		var query = 'MATCH (n) return id(n) as id, n.label as label, n.description as description'
 		try {
 			var result = await web.cypher( query)
@@ -264,7 +267,7 @@ module.exports = class Graph {
 	}
 
 
-	async deleteNode(rid) {
+	async deleteNode(rid, auth_header) {
 		try {
 			if(await this.hasDeletePermissions(auth_header)) {
 				rid = this.checkHastag(rid)
@@ -548,6 +551,169 @@ module.exports = class Graph {
 	}
 
 
+
+	async getGraphByNode(body, ctx) {
+
+		var me = await this.myId(ctx.request.headers.mail)
+		var schema_relations = null
+		// get schemas first so that one can map relations to labels
+		schema_relations = await this.getSchemaRelations()
+		
+		const options = {
+			serializer: 'graph',
+			format: 'cytoscape',
+			schemas: schema_relations,
+			current: body.current,
+			me: me
+		}
+
+		const query = `MATCH (p) WHERE id(p) = "#${body.current}" OPTIONAL MATCH (p)-[r]-(t) RETURN p,r,t`
+
+		return web.cypher(query, options)
+	}
+
+
+	async getGraphByRelation(body, ctx) {
+
+		var me = await this.myId(ctx.request.headers.mail)
+		var schema_relations = null
+		// get schemas first so that one can map relations to labels
+		schema_relations = await this.getSchemaRelations()
+		
+		const options = {
+			serializer: 'graph',
+			format: 'cytoscape',
+			schemas: schema_relations,
+			current: body.current,
+			me: me
+		}
+
+		const query = `MATCH (p) WHERE id(p) = "${body.current}" OPTIONAL MATCH (p)-[r:${body.relation}]-(t) RETURN p,r,t`
+
+		return web.cypher(query, options)
+	}
+
+
+	async getGraphNavigation(body, ctx) {
+
+		var me = await this.myId(ctx.request.headers.mail)
+		var schema_relations = null
+		// get schemas first so that one can map relations to labels
+		schema_relations = await this.getSchemaRelations()
+		
+		const options = {
+			serializer: 'graph',
+			format: 'cytoscape',
+			schemas: schema_relations,
+			me: me
+		}
+
+		const query = 	`match (s) WHERE s:Query OR s:Menu OR s:UserGroup  OPTIONAL MATCH (s)-[r]-(p) OPTIONAL MATCH (p)-[r2]-(group) return s,p, r, group, r2`
+
+		return web.cypher(query, options)
+	}
+
+
+
+	async getGraphByQueryRID(body, ctx) {
+
+		var me = await this.myId(ctx.request.headers.mail)
+		var schema_relations = null
+		// get schemas first so that one can map relations to labels
+		schema_relations = await this.getSchemaRelations()
+		
+		const options = {
+			serializer: 'graph',
+			format: 'cytoscape',
+			schemas: schema_relations,
+			me: me
+		}
+
+		const query = 	`MATCH (query:Query) WHERE id(query) = "#${body.rid}" RETURN query`
+
+		var response = await web.cypher(query)
+		if(response.result && response.result.length == 1) {
+			return web.cypher(response.result[0].query, options)
+		}
+	}
+
+
+	async getLinkedByNode(body, ctx) {
+
+		var me = await this.myId(ctx.request.headers.mail)
+		var schema_relations = null
+		// get schemas first so that one can map relations to labels
+		schema_relations = await this.getSchemaRelations()
+		
+		const options = {
+			serializer: 'graph',
+			format: 'cytoscape',
+			schemas: schema_relations,
+			me: me
+		}
+
+		const query = 	`MATCH (node)-[r]-(current:${body.type}) WHERE id(current) = "#${body.current}" RETURN node, r, current`
+
+		return web.cypher(query, options)
+	}
+
+
+	async getGraphByItemList(body, ctx) {
+		const items_str = body.items.map(x => `'#${x}'`).join(',')
+		var me = await this.myId(ctx.request.headers.mail)
+		var schema_relations = null
+		// get schemas first so that one can map relations to labels
+		schema_relations = await this.getSchemaRelations()
+		
+		const options = {
+			serializer: 'graph',
+			format: 'cytoscape',
+			schemas: schema_relations,
+			me: me
+		}
+		const query = `MATCH (p)  WHERE id(p) IN [${items_str}] OPTIONAL MATCH (p)-[r]-(p2) WHERE id(p2) IN [${items_str}] RETURN p, r, p2`
+		return web.cypher(query, options, 1)
+	}
+
+
+	async getSchemaGraph() {
+		var schema_relations = null
+		// get schemas first so that one can map relations to labels
+		schema_relations = await this.getSchemaRelations()
+		
+		const options = {
+			serializer: 'graph',
+			format: 'cytoscape',
+			schemas: schema_relations
+		}
+		const query = `MATCH (s:Schema) WHERE NOT s._type IN ["Menu", "Query", "UserGroup", "Tag", "NodeGroup"] OPTIONAL MATCH (s)-[r]-(s2:Schema)  return s,r,s2`
+		return await web.cypher(query, options)
+	}
+
+	async getSchemaGraphByTag(tag) {
+		var schema_relations = null
+		// get schemas first so that one can map relations to labels
+		schema_relations = await this.getSchemaRelations()
+		
+		const options = {
+			serializer: 'graph',
+			format: 'cytoscape',
+			schemas: schema_relations
+		}
+		const query = 
+		`MATCH (s:Schema)-[r]-(s2:Schema) WHERE NOT s._type IN ["Menu", "Query", "UserGroup", "Tag", "NodeGroup"] AND "${tag}" IN r.tags return s,r,s2`
+		return await web.cypher(query, options)
+	}
+
+
+	async getMapPositions(body, ctx) {
+
+		const query = 'MATCH (n)-[r]-(map:QueryMap) RETURN r.x as x, r.y as y, id(n) as id'
+		return web.cypher(query)
+	}
+	
+
+
 	async getSchemaRelations() {
 		var schema_relations = {}
 		var schemas = await web.cypher( 'MATCH (s:Schema)-[r]->(s2:Schema) return type(r) as type, r.label as label, r.label_rev as label_rev, COALESCE(r.label_inactive, r.label) as label_inactive, s._type as from, s2._type as to, r.tags as tags, r.compound as compound')
@@ -611,16 +777,16 @@ module.exports = class Graph {
 
 		if(!user) throw('user not defined')
 		var query = `MATCH (me:Person {id:"${user}"}) return id(me) as rid, me._group as group, me._access as access`
-		var result = await web.cypher( query)
+		var result = await web.cypher(query)
 
 		// add user if not found
 		if(result.result.length == 0) {
 			
 			query = `MERGE (p:Person {id: "${user}"}) SET p.label = "${user}", p._group = 'user', p._active = true, p._access = '${rights}'`
 
-			result = await web.cypher( query)
+			result = await web.cypher(query)
 			query = `MATCH (me:Person {id:"${user}"}) return id(me) as rid, me._group as group`
-			result = await web.cypher( query)
+			result = await web.cypher(query)
 
 			return result.result[0]
 		} else return result.result[0]
@@ -630,7 +796,7 @@ module.exports = class Graph {
 	async myId(user) {
 		if(!user) throw('user not defined')
 		var query = `MATCH (me:Person {id:"${user}"}) return id(me) as rid, me._group as group, me._access as access`
-		var response = await web.cypher( query)
+		var response = await web.cypher(query)
 		if(!response.result) throw('user not found!')
 		return response.result[0]
 	}
@@ -1001,6 +1167,12 @@ module.exports = class Graph {
 		} else {
 			throw('Illegal path')
 		}
+	}
+
+
+	async getItemList(nodetype) {
+		const query = 	`MATCH (s:${nodetype}) RETURN s.label AS label, s.description AS description, id(s) AS rid ORDER BY label`
+		return await web.cypher( query)
 	}
 
 

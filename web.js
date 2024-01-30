@@ -52,7 +52,7 @@ web.createVertexType = async function(type) {
 		await this.sql(query)
 	} catch (e) {
 		//console.log(e.message)
-		console.log(`${type} exists`)
+		//console.log(`${type} exists`)
 	}
 }
 
@@ -91,7 +91,7 @@ web.clearGraph = async function(query) {
 
 }
 
-web.cypher = async function(query, options, no_console) {
+web.cypher = async function(query, options, debug) {
 
 	const { default: got } = await import('got');
 
@@ -108,7 +108,7 @@ web.cypher = async function(query, options, no_console) {
 	};
 
 	if(options.serializer) data.json.serializer = options.serializer
-	if(!no_console) console.log(query)
+	if(debug) console.log(query)
 
 	try {
 		var response = await got.post(URL, data).json()
@@ -181,8 +181,7 @@ function nodeGrouping(nodes, edges, vertex_types, options) {
 		}
 
 	}
-	console.log(unique_links)
-	console.log(vertex_types)
+
 
 	for(var cluster_id in unique_links) {
 		if(unique_links[cluster_id].length > GROUP_THRESHOLD) {

@@ -45,18 +45,15 @@ schema.getSchemaRelations = async function(label) {
 	return out
 }
 
-schema.getSchemaTypes_old = async function() {
-	var query = 'MATCH (schema:Schema) RETURN id(schema) as rid, COALESCE(schema.label, schema._type) as label, schema._type as type, schema ORDER by label'
-	return await web.cypher( query)
-}
 
 schema.getSchemaTypes = async function() {
-	var query = 'MATCH (schema:Schema) RETURN id(schema) as rid, COALESCE(schema.label, schema._type) as label, schema._type as type, schema.browse_order as browse_order, schema ORDER by schema.browse_order, label'
+	const query = 'MATCH (schema:Schema) RETURN id(schema) as rid, COALESCE(schema.label, schema._type) as label, schema._type as type, schema.browse_order as browse_order, schema ORDER by schema.browse_order, label'
 	return await web.cypher( query)
 }
 
+
 schema.getSchemaType = async function(schema, NOT_REQUIRED) {
-	var query = `MATCH (s:Schema) WHERE s._type = "${schema}" RETURN s`
+	const query = `MATCH (s:Schema) WHERE s._type = "${schema}" RETURN s`
 	var response = await web.cypher( query)
 	if(response.result[0]) {
 		return response.result[0]
@@ -66,8 +63,9 @@ schema.getSchemaType = async function(schema, NOT_REQUIRED) {
 	}
 }
 
+
 schema.getSchemaAttributes = async function(schema, data_obj) {
-	var query = `MATCH (s:Schema) WHERE s._type = "${schema}" RETURN s`
+	const query = `MATCH (s:Schema) WHERE s._type = "${schema}" RETURN s`
 	var response = await web.cypher( query)
 	if(response.result && response.result.length) {
 		for(var key in response.result[0]) {
@@ -75,6 +73,14 @@ schema.getSchemaAttributes = async function(schema, data_obj) {
 		}
 		return data_obj
 	} else return data_obj
+}
+
+
+schema.getSchemaCardLinks = async function(rid) {
+	const query = `MATCH (s:Schema)-[r]-(t:Schema) WHERE id(s) = "#${rid}"
+	RETURN COALESCE(s.label, s._type) as source,  TYPE(r) as type, r.label as label, r.label_rev as label_rev, COALESCE(t.label, t._type) as target, id(t) as target_id, id(r) as rid, r.compound as compound, r.tags as tags, r as relation,
+	       CASE WHEN STARTNODE(r) = s THEN 'outgoing' ELSE 'incoming' END AS direction`
+	return await web.cypher(query)
 }
 
 
@@ -131,7 +137,7 @@ schema.importSchemaYAML = async function(filename, mode) {
 			const filePathSystem = path.resolve('./schemas', filename)
 			const system_schema = await fsPromises.readFile(filePathSystem, 'utf8')
 			var query = 'MATCH (s:Schema) DETACH DELETE s'
-			var result = await web.cypher( query)
+			var result = await web.cypher(query)
 			const system_schema_data = yaml.load(system_schema)
 			await writeSchemaToDB(system_schema_data)
 		}
@@ -148,7 +154,12 @@ schema.importSchemaYAML = async function(filename, mode) {
 
 
 schema.importSystemSchema = async function() {
-	await this.importSchemaYAML('.system.yaml')
+	var query = 'MATCH (s:Schema ) WHERE s._type = "Person" return s'
+	var response = await web.cypher(query)
+	if(response.result.length === 0) {
+		console.log('System schema not loaded. Importing...')
+		await this.importSchemaYAML('.system.yaml')
+	}
 }
 
 

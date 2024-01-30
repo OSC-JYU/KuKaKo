@@ -10,10 +10,20 @@ const {
 const { StringOutputParser } = require("@langchain/core/output_parsers");
 const Graph = require("./graph.js")
 
-const model = new ChatOpenAI({ modelName: "gpt-4" });
 const graph = new Graph()
 
 let smartSearch = {}
+
+smartSearch.init = async function() {
+  if(process.env.OPENAI_API_KEY) {
+    smartSearch.model = new ChatOpenAI({ modelName: "gpt-4" });
+    return true
+  } else {
+    console.log('No API key found! SmartSearch disabled.')
+    return false
+  }
+
+}
 
 
 
@@ -60,7 +70,7 @@ smartSearch.rag = async function(query) {
         question: new RunnablePassthrough(),
         },
         prompt,
-        model,
+        smartSearch.model,
         new StringOutputParser(),
     ]);
     

@@ -15,11 +15,12 @@ const Gitlab 		= require('./gitlab.js');
 const styles 		= require('./styles.js');
 const schema 		= require('./schema.js');
 const media 		= require('./media.js');
-const smartSearch 		= require('./smartSearch.js');
+const smartSearch 	= require('./smartSearch.js');
 
 
 let graph
 let docIndex
+let semanticsearch
 
 (async () => {
 	console.log('initing...')
@@ -34,6 +35,7 @@ let docIndex
 	try {
 		await graph.initDB(docIndex)
 		await graph.createIndex()
+		semanticsearch = await smartSearch.init()
 	} catch (e) {
 		console.log(e)
 		process.exit(1)
@@ -90,7 +92,6 @@ const upload = multer({
 
 // check that user has rights to use app
 app.use(async function handleError(context, next) {
-	console.log(context.request.headers[AUTH_HEADER])
 	if(process.env.MODE == 'development') {
 		if(process.env.DEV_USER) {
 			context.request.headers[AUTH_HEADER] = process.env.DEV_USER // dummy shibboleth for local use	
@@ -100,7 +101,7 @@ app.use(async function handleError(context, next) {
 	}
 
 
-	if(process.env.CREATE_USERS_ON_THE_FLY == 1) {
+	if(process.env.CREATE_USERS_ON_THE_FLY) {
 		await next()
 	} else {
 		var me = await graph.myId(context.request.headers[AUTH_HEADER])
@@ -156,7 +157,7 @@ router.get('/api', function (ctx) {
 
 router.get('/api/me', async function (ctx) {
 	
-	if(process.env.CREATE_USERS_ON_THE_FLY = 1) {
+	if(process.env.CREATE_USERS_ON_THE_FLY) {
 		// keep list of visitors so that we do not create double users on sequential requests
 		if(!visitors.includes(ctx.request.headers[AUTH_HEADER])) {
 			visitors.push(ctx.request.headers[AUTH_HEADER])
@@ -164,7 +165,7 @@ router.get('/api/me', async function (ctx) {
 		}
 	}
 	var me = await graph.myId(ctx.request.headers[AUTH_HEADER])
-	ctx.body = {rid: me.rid, admin: me.admin, group:me.group, access:me.access, id: ctx.request.headers[AUTH_HEADER], mode:process.env.MODE ? process.env.MODE : 'production' }
+	ctx.body = {rid: me.rid, admin: me.admin, group:me.group, access:me.access, id: ctx.request.headers[AUTH_HEADER], mode:process.env.MODE ? process.env.MODE : 'production', semanticsearch: semanticsearch }
 })
 
 router.get('/api/groups', async function (ctx) {
@@ -192,11 +193,6 @@ router.get('/api/semanticsearch/rag', async function (ctx) {
 router.post('/api/semanticsearch/build', async function (ctx) {
 	var result = await smartSearch.buildVectors()
 	ctx.body = result
-})
-
-router.post('/api/query', async function (ctx) {
-	var n = await graph.query(ctx.request.body)
-	ctx.body = n
 })
 
 router.get('/api/tags', async function (ctx) {
@@ -240,6 +236,21 @@ router.get('/api/schemas', async function (ctx) {
 	ctx.body = n
 })
 
+router.get('/api/schemas/graph', async function (ctx) {
+	var n = await graph.getSchemaGraph()
+	ctx.body = n
+})
+
+router.post('/api/schemas/graph/tag', async function (ctx) {
+	var n = await graph.getSchemaGraphByTag(ctx.request.body.tag)
+	ctx.body = n
+})
+
+router.post('/api/schemas/links', async function (ctx) {
+	var n = await schema.getSchemaCardLinks(ctx.request.body.rid)
+	ctx.body = n
+})
+
 router.get('/api/schemas/:schema', async function (ctx) {
 	var n = await schema.getSchema(ctx.request.params.schema)
 	ctx.body = n
@@ -275,8 +286,39 @@ router.post('/api/graph/query/me', async function (ctx) {
 	ctx.body = n
 })
 
-router.post('/api/graph/query', async function (ctx) {
-	var n = await graph.getGraph(ctx.request.body, ctx)
+router.post('/api/graph/by_node', async function (ctx) {
+	var n = await graph.getGraphByNode(ctx.request.body, ctx)
+	ctx.body = n
+})
+
+router.post('/api/graph/by_relation', async function (ctx) {
+	var n = await graph.getGraphByRelation(ctx.request.body, ctx)
+	ctx.body = n
+})
+
+router.post('/api/graph/by_query_rid', async function (ctx) {
+	var n = await graph.getGraphByQueryRID(ctx.request.body, ctx)
+	ctx.body = n
+})
+
+
+router.post('/api/graph/navigation', async function (ctx) {
+	var n = await graph.getGraphNavigation(ctx.request.body, ctx)
+	ctx.body = n
+})
+
+router.post('/api/graph/linked', async function (ctx) {
+	var n = await graph.getLinkedByNode(ctx.request.body, ctx)
+	ctx.body = n
+})
+
+router.post('/api/graph/by_item_list', async function (ctx) {
+	var n = await graph.getGraphByItemList(ctx.request.body, ctx)
+	ctx.body = n
+})
+
+router.post('/api/graph/map_positions', async function (ctx) {
+	var n = await graph.getMapPositions(ctx.request.body, ctx)
 	ctx.body = n
 })
 
@@ -289,8 +331,13 @@ router.post('/api/graph/vertices', async function (ctx) {
 })
 
 
+router.post('/api/graph/vertices/list/type', async function (ctx) {
+	var n = await graph.getItemList(ctx.request.body.type)
+	ctx.body = n
+})
+
 router.delete('/api/graph/vertices/:rid', async function (ctx) {
-	var n = await graph.deleteNode(ctx.request.params.rid)
+	var n = await graph.deleteNode(ctx.request.params.rid, ctx.request.headers[AUTH_HEADER])
 	docIndex.remove('#' + ctx.request.params.rid)
 	ctx.body = n
 })
@@ -490,9 +537,13 @@ router.post('/api/styles/upload', upload.single('file'), async function (ctx)  {
 	await moveFile(ctx.file.path, filepath, ctx)
 })
 
-
-
 app.use(router.routes());
+
+app.use(async (ctx, next) => {
+	ctx.status = 404
+	ctx.body = 'Not found'
+})
+
 
 async function moveFile(file, target_path, ctx) {
 	var exists = await checkFileExists(target_path)
