@@ -1,0 +1,105 @@
+[
+	{
+		"selector": "node[type='Metadata']",
+		"style": {
+			"background-color": "#708297",
+			"width": "160px",
+			"height": "40px",
+		    "content": "(node) => node.data('name')"
+		 }
+	 },
+
+	 {
+		"selector": "node[type='Storage']",
+		"style": {
+			"shape": "ellipse",
+			"height": "(node) => node.data('me') ? 120 : 80",
+			"width": "(node) => node.data('me') ? 120 : 80",
+			"font-size": 10,
+			"text-valign": "top",
+			"color":"black",
+			"background-color": "(node) => node.data('me') ? '#1C86AA' : '#8ed1e8'",
+			"background-position-x":"2px",
+			"background-position-y":"0px",
+			"background-width":"20px",
+			"background-height":"20px",
+			"background-fit":"cover",
+			"text-background-color": "#ffffff",
+			"text-background-opacity": 1,
+			"background-image": "(node) => node.data('image') ? node.data('image') : 'icons/database.svg'",
+			"content": "(node) => node.data('name')"
+		}
+	},
+	{
+		"selector": "node[type='Field']",
+		"style": {
+			"color":"black",
+			"background-color": "orange"
+		}
+	},
+
+	{
+		"selector": "node[type='MetadataSchema']",
+		"style": {
+			"shape": "rectangle",
+			"width": "120px",
+			"height": "30px",
+			"color":"black",
+			"background-color": "yellow"
+
+		}
+	},
+
+	{
+		"selector": "node[type='Vocabulary']",
+		"style": {
+			"shape": "rectangle",
+			"width": "120px",
+			"height": "30px",
+			"color":"black",
+			"background-color": "green"
+
+		}
+	},
+
+	{
+		"selector": "node[type='Record']",
+		"style": {
+			"shape": "rectangle"
+		}
+	},
+
+	{
+		"selector": "node[type='empty']",
+		"style": {
+			"content": "no results",
+			"color":"white",
+			"background-color": "#1C86AA"
+		}
+	},
+
+	{
+		"selector": "node[type='Menu']",
+		"style": {
+			"color":"white",
+			"background-color": "#3F7FBF"
+		}
+	},
+
+	{
+		"selector": "node[type='Tag']",
+		"style": {
+			"color":"black",
+			"background-color": "#F1C827"
+		}
+	},
+
+	{
+		"selector": "node[type='Query']",
+		"style": {
+			"color":"black",
+			"background-color": "#F1C827"
+		}
+	}
+
+]

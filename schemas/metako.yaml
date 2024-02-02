@@ -1,0 +1,40 @@
+# Schema for handling metadata
+
+nodes:
+  - Metadata:
+      label: Metadata
+  - MetadataSchema:
+      label: Metadataskeema
+  - Record:
+      label: Tietue
+  - Field:
+      label: Kenttä
+  - Storage:
+      label: Tietovaranto
+  - Vocabulary:
+      label: Sanasto
+
+
+edges:
+  - Metadata:IS_EXPRESSED:Field:
+      label: ilmaistaan
+      label_rev: ilmaisee
+  - Record:HAS:Field:
+      label: käyttää
+      label_rev: tietueessa
+  - Record:HAS_TYPE:Field:
+      label: on tyyppiä
+      label_rev: tietueen tyyppi
+  - Record:IS_LOCATED:Storage:
+      label: sijaitsee
+      label_rev: sisältää
+  - Record:IS_LOCATED:Storage:
+      label: sijaitsee
+      label_rev: sisältää
+  - Field:IS_PART_OF:MetadataSchema:
+      label: on osa
+      label_rev: sisältää
+  - Field:USES_VALUES_FROM:Vocabulary:
+      label: käyttää arvoja
+      label_rev: käytetään
+
