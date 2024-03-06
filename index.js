@@ -1,5 +1,5 @@
 const Koa			= require('koa');
-const Router		= require('koa-router');
+const Router		= require('@koa/router');
 const bodyParser	= require('koa-body');
 const json			= require('koa-json')
 const serve 		= require('koa-static')
@@ -15,7 +15,7 @@ const Gitlab 		= require('./gitlab.js');
 const styles 		= require('./styles.js');
 const schema 		= require('./schema.js');
 const media 		= require('./media.js');
-const smartSearch 	= require('./smartSearch.js');
+//const smartSearch 	= require('./smartSearch.js');
 
 
 let graph
@@ -35,7 +35,7 @@ let semanticsearch
 	try {
 		await graph.initDB(docIndex)
 		await graph.createIndex()
-		semanticsearch = await smartSearch.init()
+		//semanticsearch = await smartSearch.init()
 	} catch (e) {
 		console.log(e)
 		process.exit(1)
@@ -138,17 +138,6 @@ app.use(async function handleError(context, next) {
 	}
 });
 
-async function setDefaultResponse (ctx, next) {
-    await next();
-
-    if (!ctx.body) {
-		const stream = fs.createReadStream(path.join(__dirname, '/public', 'index.html'))
-		ctx.type = 'text/html; charset=utf-8'
-		ctx.body = stream
-    }
-};
-
-app.use(setDefaultResponse)
 
 
 router.get('/api', function (ctx) {
@@ -200,8 +189,18 @@ router.get('/api/tags', async function (ctx) {
 	ctx.body = n
 })
 
+router.get('/api/tags/:rid', async function (ctx) {
+	var n = await graph.getTaggedGraph(ctx.request.params.rid)
+	ctx.body = n
+})
+
 router.get('/api/maps', async function (ctx) {
 	var n = await graph.getMaps()
+	ctx.body = n
+})
+
+router.get('/api/maps/:rid', async function (ctx) {
+	var n = await graph.getMapData(ctx.request.params.rid)
 	ctx.body = n
 })
 
@@ -538,6 +537,21 @@ router.post('/api/styles/upload', upload.single('file'), async function (ctx)  {
 })
 
 app.use(router.routes());
+
+
+app.use(async (ctx, next) => {
+    
+
+    // Check if ctx.body is not set and the request method is GET
+    if (!ctx.body && ctx.method === 'GET') {
+        // Send index.html as the default response
+        const indexStream = fs.createReadStream(path.join(__dirname, 'public', 'index.html'));
+        ctx.type = 'text/html';
+        ctx.body = indexStream;
+    } else {
+		await next();
+	}
+});
 
 app.use(async (ctx, next) => {
 	ctx.status = 404

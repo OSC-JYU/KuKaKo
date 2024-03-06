@@ -1,7 +1,7 @@
 IMAGES := $(shell docker images -f "dangling=true" -q)
 CONTAINERS := $(shell docker ps -a -q -f status=exited)
 VOLUME := kukako-data
-VERSION := 0.1h
+VERSION := 0.2e
 
 
 clean:

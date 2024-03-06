@@ -526,12 +526,12 @@ module.exports = class Graph {
 
 
 
-	async getGraph(body, ctx) {
+	async getGraph(query, ctx) {
 
 		var me = await this.myId(ctx.request.headers.mail)
 		// ME
-		if(body.query.includes('_ME_')) {
-			body.query = body.query.replace('_ME_', me.rid)
+		if(query.includes('_ME_')) {
+			query = query.replace('_ME_', me.rid)
 		}
 
 		var schema_relations = null
@@ -637,7 +637,7 @@ module.exports = class Graph {
 		}
 	}
 
-
+	// currently used only for getting items on map
 	async getLinkedByNode(body, ctx) {
 
 		var me = await this.myId(ctx.request.headers.mail)
@@ -652,7 +652,7 @@ module.exports = class Graph {
 			me: me
 		}
 
-		const query = 	`MATCH (node)-[r]-(current:${body.type}) WHERE id(current) = "#${body.current}" RETURN node, r, current`
+		const query = 	`MATCH (node)-[r]->(current:${body.type}) WHERE id(current) = "#${body.current}" RETURN node`
 
 		return web.cypher(query, options)
 	}
@@ -672,7 +672,7 @@ module.exports = class Graph {
 			me: me
 		}
 		const query = `MATCH (p)  WHERE id(p) IN [${items_str}] OPTIONAL MATCH (p)-[r]-(p2) WHERE id(p2) IN [${items_str}] RETURN p, r, p2`
-		return web.cypher(query, options, 1)
+		return web.cypher(query, options)
 	}
 
 
@@ -815,10 +815,20 @@ module.exports = class Graph {
 		return result.result
 	}
 
+	async getMapData(rid) {
+		if(!rid.match(/^#/)) rid = '#' + rid
+		var query = `MATCH (map:QueryMap) WHERE id(map) = "${rid}" RETURN map.image as image, map.scale as scale`
+		var response = await web.cypher( query)
+		if(response.result && response.result.length == 1)
+			return response.result[0]
+		else
+			return {}
+	}
 
 	async getMenus(group) {
 		//var query = 'MATCH (m:Menu) return m'
-		var query = `MATCH (m:Menu) -[:VISIBLE_FOR_GROUP]->(n:UserGroup {id:"${group}"}) OPTIONAL MATCH (m)-[]-(q) WHERE q:Query OR q:Tag RETURN COLLECT( q) AS items, m.label as label, m.id as id ORDER BY id`
+		var query = `MATCH (m:Menu) -[:VISIBLE_FOR_GROUP]->(n:UserGroup {id:"${group}"}) OPTIONAL MATCH (m)<-[r]-(q) WHERE (q:Query OR q:Tag) AND NOT exists(r._active) OR NOT r._active = false   RETURN COLLECT(DISTINCT q) AS items, m.label as label, m.id as id ORDER BY id`
+		console.log(query)
 		var result = await web.cypher( query)
 		var menus = this.forceArray(result.result, 'items')
 		return menus
@@ -1146,6 +1156,23 @@ module.exports = class Graph {
 		return await web.cypher( query)
 	}
 
+	async getTaggedGraph(rid) {
+		var graph = {}
+		if(!rid.match(/^#/)) rid = '#' + rid
+		const query = `MATCH (t:Tag) WHERE id(t) = "${rid}" RETURN t`
+		var response = await web.cypher( query)
+		if(response.result && response.result.length == 1) {
+			const tag = response.result[0]
+			var tagged_relations = await web.cypher(`match (s)-[r]->(t) where "${tag.id}" in r.tags return type(r) as rel`)
+			var rels = []
+			for(var rel of tagged_relations.result) {
+				rels.push(rel.rel)
+			}if(rels.length) {
+				graph = await web.getGraph(`MATCH  (s)-[r:${rels.join('|:')}]->(t) WHERE not s:Schema return s,r,t, t.label as l`)
+			}
+		}
+		return graph
+	}
 
 	async getQueries() {
 		var query = 'MATCH (t:Query)  RETURN t'

@@ -91,6 +91,34 @@ web.clearGraph = async function(query) {
 
 }
 
+web.getGraph = async function(query, options, debug) {
+
+	const { default: got } = await import('got');
+	if(!options) var options = {}
+	
+	var data = {
+		username: username,
+		password: password,
+		json: {
+			command:query,
+			language:'cypher',
+			serializer: 'graph'
+		}
+	};
+	
+	try {
+		var response = await got.post(URL, data).json()
+		options.schemas = await getSchemaRelations(data)
+		options.labels = await getSchemaVertexLabels(data)
+		console.log(options)
+		console.log(response)
+		return convert2CytoScapeJs(response, options)
+	} catch(e) {
+		throw({message: e.message, code: e.code})
+	}
+}
+
+
 web.cypher = async function(query, options, debug) {
 
 	const { default: got } = await import('got');
@@ -144,6 +172,21 @@ async function getSchemaVertexLabels(data) {
 		console.log(query)
 		throw(e)
 	}
+}
+
+async function getSchemaRelations(data) {
+	const { default: got } = await import('got');
+	const query = 'MATCH (s:Schema)-[r]->(s2:Schema) return type(r) as type, r.label as label, r.label_rev as label_rev, COALESCE(r.label_inactive, r.label) as label_inactive, s._type as from, s2._type as to, r.tags as tags, r.compound as compound'
+	data.json = {
+		command:query,
+		language:'cypher'
+	}
+	var schema_relations = {}
+	var schemas = await got.post(URL, data).json()
+	schemas.result.forEach(x => {
+		schema_relations[`${x.from}:${x.type}:${x.to}`] = x
+	})
+	return schema_relations
 }
 
 function setParent(vertices, child, parent) {
