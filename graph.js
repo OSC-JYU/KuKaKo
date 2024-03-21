@@ -658,7 +658,10 @@ module.exports = class Graph {
 	}
 
 
+	
+	// currently not used (meant for several nodes display)
 	async getGraphByItemList(body, ctx) {
+
 		const items_str = body.items.map(x => `'#${x}'`).join(',')
 		var me = await this.myId(ctx.request.headers.mail)
 		var schema_relations = null
@@ -672,6 +675,22 @@ module.exports = class Graph {
 			me: me
 		}
 		const query = `MATCH (p)  WHERE id(p) IN [${items_str}] OPTIONAL MATCH (p)-[r]-(p2) WHERE id(p2) IN [${items_str}] RETURN p, r, p2`
+		return web.cypher(query, options)
+	}
+
+	// for stories
+	async getGraphByItemListRaw(body, ctx) {
+
+		const items_str = body.items.map(x => `'${x}'`).join(',')
+		var me = await this.myId(ctx.request.headers.mail)
+		var schema_relations = null
+		
+		const options = {
+			serializer: 'graph',
+			format: 'cytoscape',
+			me: me
+		}
+		const query = `MATCH (p) WHERE id(p) IN [${items_str}] RETURN p`
 		return web.cypher(query, options)
 	}
 

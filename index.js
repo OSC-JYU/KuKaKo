@@ -311,8 +311,13 @@ router.post('/api/graph/linked', async function (ctx) {
 	ctx.body = n
 })
 
-router.post('/api/graph/by_item_list', async function (ctx) {
+router.post('/api/graph/by_item_list_linked', async function (ctx) {
 	var n = await graph.getGraphByItemList(ctx.request.body, ctx)
+	ctx.body = n
+})
+
+router.post('/api/graph/by_item_list', async function (ctx) {
+	var n = await graph.getGraphByItemListRaw(ctx.request.body, ctx)
 	ctx.body = n
 })
 
@@ -320,6 +325,11 @@ router.post('/api/graph/map_positions', async function (ctx) {
 	var n = await graph.getMapPositions(ctx.request.body, ctx)
 	ctx.body = n
 })
+
+// router.post('/api/graph/by_node_list', async function (ctx) {
+// 	var n = await graph.getGraphByRelation(ctx.request.body, ctx)
+// 	ctx.body = n
+// })
 
 router.post('/api/graph/vertices', async function (ctx) {
 	var type = ctx.request.body.type
