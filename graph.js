@@ -20,11 +20,17 @@ module.exports = class Graph {
 		console.log(`ArcadeDB: ${web.getURL()}`)
 		console.log(`Checking database...`)
 		this.docIndex = docIndex
-		const query = 'MATCH (n:Schema) return n'
 
 		try {
-			await web.cypher(query)
+			const db_exists = await web.checkDB()
+			if(!db_exists) {
+				console.log('Creating database...')
+				await web.createDB()
+			}
+			console.log('done')
+			
 		} catch (e) {
+			console.log(e)
 			try {
 				if(e.code == 'ERR_GOT_REQUEST_ERROR') {
 					console.log('Request error! Check database. Did you set DB_PASSWORD? exiting...')
@@ -35,8 +41,11 @@ module.exports = class Graph {
 					console.log('database not ready, waiting 10 seconds...')
 					await timers.setTimeout(10000)
 				}
-				console.log('Checking database...')
-				var result = await web.cypher(query)
+
+				if(e.code == 'ERR_NON_2XX_3XX_RESPONSE') {
+					console.log('Request error! Check database. Did you set DB_PASSWORD? exiting...')
+					process.exit(1)
+				}
 			} catch (e) {
 				if(e.code == 'ECONNREFUSED') {
 					console.log(`ERROR: Database connection refused! \nIs Arcadedb running at ${web.getURL()}?`)
@@ -62,13 +71,8 @@ module.exports = class Graph {
 	async setSystemNodes() {
 		try {
 			// database exist, make sure that some base types are present
-			await web.createVertexType('Schema')
-			await web.createVertexType('Person')
-			await web.createVertexType('UserGroup')
-			await web.createVertexType('Menu')
-			await web.createVertexType('Query')
-			await web.createVertexType('Tag')
-			await schema.importSystemSchema()
+			await web.createVertexType('Nodes')
+			await schema.importSchemaYAML('.system.yaml')
 			await this.createSystemGraph()
 			// Make sure that base system graph exists
 
@@ -86,8 +90,8 @@ module.exports = class Graph {
 		try {
 
 			// Usergroup "Basic"
-			var query = 'MERGE (m:UserGroup {id:"user"}) SET m.label = "User", m._active = true RETURN m'
-			var group = await web.cypher(query)
+			var query = 'UPDATE UserGroup SET id = "user", label = "User", _active = true UPSERT WHERE id = "user"'
+			var group = await web.sql(query)
 
 			// Menu "Me"
 			// var query = 'MERGE (m:Menu {id:"me"}) SET m.label = "Me", m._active = true RETURN m'
@@ -99,8 +103,8 @@ module.exports = class Graph {
 			// await web.cypher(query)
 
 			// default local user
-			query = `MERGE (p:Person {id:"local.user@localhost"}) SET p._group = "user", p._access = "admin", p._active = true, p.label = "Local You", p.description = "It's really You!" RETURN p`
-			await web.cypher(query)
+			query = `UPDATE Person SET id = 'local.user@localhost', label='Local You', _group = 'user', _access = 'admin', _active = true, description = "It's really You! " UPSERT WHERE id = 'local.user@localhost'`
+			await web.sql(query)
 		} catch (e) {
 			console.log(query)
 			throw('System graph creation failed')
@@ -126,7 +130,7 @@ module.exports = class Graph {
 			}
 
 		} catch(e) {
-			console.log(`Could not find database. \nIs Arcadedb running at ${URL}?`)
+			console.log(`Could not find database. \nIs Arcadedb running at ${web.getURL()}?`)
 			process.exit(1)
 		}
 
@@ -150,7 +154,7 @@ module.exports = class Graph {
 		var me = await this.myId(auth_header)
 		if(me.access === 'admin') {
 			return true
-		} else if(me.access === 'creator' && type_data.label !== 'Schema') {
+		} else if(me.access === 'creator' && type_data.label !== 'Nodes') {
 			return true
 		} else if(me.access === 'user' && type_data._public) {
 			return true
@@ -686,7 +690,7 @@ module.exports = class Graph {
 			format: 'cytoscape',
 			schemas: schema_relations
 		}
-		const query = `MATCH (s:Schema) WHERE NOT s._type IN ["Menu", "Query", "UserGroup", "Tag", "NodeGroup"] OPTIONAL MATCH (s)-[r]-(s2:Schema)  return s,r,s2`
+		const query = `MATCH (s:Nodes) WHERE NOT s._type IN ["Menu", "Query", "UserGroup", "Tag", "NodeGroup"] OPTIONAL MATCH (s)-[r]-(s2:Nodes)  return s,r,s2`
 		return await web.cypher(query, options)
 	}
 
@@ -701,7 +705,7 @@ module.exports = class Graph {
 			schemas: schema_relations
 		}
 		const query = 
-		`MATCH (s:Schema)-[r]-(s2:Schema) WHERE NOT s._type IN ["Menu", "Query", "UserGroup", "Tag", "NodeGroup"] AND "${tag}" IN r.tags return s,r,s2`
+		`MATCH (s:Nodes)-[r]-(s2:Nodes) WHERE NOT s._type IN ["Menu", "Query", "UserGroup", "Tag", "NodeGroup"] AND "${tag}" IN r.tags return s,r,s2`
 		return await web.cypher(query, options)
 	}
 
@@ -716,7 +720,7 @@ module.exports = class Graph {
 
 	async getSchemaRelations() {
 		var schema_relations = {}
-		var schemas = await web.cypher( 'MATCH (s:Schema)-[r]->(s2:Schema) return type(r) as type, r.label as label, r.label_rev as label_rev, COALESCE(r.label_inactive, r.label) as label_inactive, s._type as from, s2._type as to, r.tags as tags, r.compound as compound')
+		var schemas = await web.cypher( 'MATCH (s:Nodes)-[r]->(s2:Nodes) return type(r) as type, r.label as label, r.label_rev as label_rev, COALESCE(r.label_inactive, r.label) as label_inactive, s._type as from, s2._type as to, r.tags as tags, r.compound as compound')
 		schemas.result.forEach(x => {
 			schema_relations[`${x.from}:${x.type}:${x.to}`] = x
 		})
@@ -988,7 +992,7 @@ module.exports = class Graph {
 		if(!filename) throw('You need to give a file name! ')
 		var vertex_ids = {}
 		var edge_ids = {}
-		var query = 'MATCH (n) WHERE NOT n:Schema OPTIONAL MATCH (n)-[r]-() RETURN n, r '
+		var query = 'MATCH (n) WHERE NOT n:Nodes OPTIONAL MATCH (n)-[r]-() RETURN n, r '
 		var schemas = await web.cypher( query, {serializer: 'graph'})
 		var output = {nodes: [], edges: []}
 		for(var vertex of schemas.result.vertices) {
@@ -1043,7 +1047,7 @@ module.exports = class Graph {
 		var output = []
 
 		// first all types
-		const type_query = "MATCH (s:Schema) WHERE NOT s._type IN ['UserGroup', 'Menu', 'Query', 'Tag'] return s._type AS type"
+		const type_query = "MATCH (s:Nodes) WHERE NOT s._type IN ['UserGroup', 'Menu', 'Query', 'Tag'] return s._type AS type"
 		var schemas = await web.cypher(type_query)
 
 		for(var schema of schemas.result) {
@@ -1092,7 +1096,7 @@ module.exports = class Graph {
 		var items = []
 
 		// first all types
-		const type_query = "MATCH (s:Schema) WHERE NOT s._type IN ['UserGroup', 'Menu', 'Query', 'Tag'] return s._type AS type"
+		const type_query = "MATCH (s:Nodes) WHERE NOT s._type IN ['UserGroup', 'Menu', 'Query', 'Tag'] return s._type AS type"
 		var schemas = await web.cypher(type_query)
 
 		for(var schema of schemas.result) {
@@ -1168,7 +1172,7 @@ module.exports = class Graph {
 			for(var rel of tagged_relations.result) {
 				rels.push(rel.rel)
 			}if(rels.length) {
-				graph = await web.getGraph(`MATCH  (s)-[r:${rels.join('|:')}]->(t) WHERE not s:Schema return s,r,t, t.label as l`)
+				graph = await web.getGraph(`MATCH  (s)-[r:${rels.join('|:')}]->(t) WHERE not s:Nodes return s,r,t, t.label as l`)
 			}
 		}
 		return graph
@@ -1181,7 +1185,7 @@ module.exports = class Graph {
 
 
 	async getStyles() {
-		var query = 'MATCH (s:Schema) return COALESCE(s._style,"") as style, s._type as type'
+		var query = 'MATCH (s:Nodes) return COALESCE(s._style,"") as style, s._type as type'
 		return await web.cypher( query)
 	}
 

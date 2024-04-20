@@ -11,9 +11,9 @@ let schema = {}
 schema.getSchemaRelations = async function(label) {
 	var query = ''
 	if(label)
-		query = `MATCH (s:Schema {_type:"${label}"}) -[rel]- (t:Schema) RETURN s, rel ,t, COALESCE(t.label, t._type) as label ORDER by label`
+		query = `MATCH (s:Nodes {_type:"${label}"}) -[rel]- (t:Nodes) RETURN s, rel ,t, COALESCE(t.label, t._type) as label ORDER by label`
 	else
-		query = `MATCH (s:Schema ) -[rel]-(t:Schema) RETURN s, rel, t`
+		query = `MATCH (s:Nodes ) -[rel]-(t:Nodes) RETURN s, rel, t`
 	var result = await web.cypher(query)
 	var out = []
 	for(var schema of result.result) {
@@ -47,13 +47,13 @@ schema.getSchemaRelations = async function(label) {
 
 
 schema.getSchemaTypes = async function() {
-	const query = 'MATCH (schema:Schema) RETURN id(schema) as rid, COALESCE(schema.label, schema._type) as label, schema._type as type, schema._browse_order as browse_order, schema ORDER by schema._browse_order, label'
+	const query = 'MATCH (schema:Nodes) RETURN id(schema) as rid, COALESCE(schema.label, schema._type) as label, schema._type as type, schema._browse_order as browse_order, schema ORDER by schema._browse_order, label'
 	return await web.cypher( query)
 }
 
 
 schema.getSchemaType = async function(schema, NOT_REQUIRED) {
-	const query = `MATCH (s:Schema) WHERE s._type = "${schema}" RETURN s`
+	const query = `MATCH (s:Nodes) WHERE s._type = "${schema}" RETURN s`
 	var response = await web.cypher( query)
 	if(response.result[0]) {
 		return response.result[0]
@@ -65,7 +65,7 @@ schema.getSchemaType = async function(schema, NOT_REQUIRED) {
 
 
 schema.getSchemaAttributes = async function(schema, data_obj) {
-	const query = `MATCH (s:Schema) WHERE s._type = "${schema}" RETURN s`
+	const query = `MATCH (s:Nodes) WHERE s._type = "${schema}" RETURN s`
 	var response = await web.cypher( query)
 	if(response.result && response.result.length) {
 		for(var key in response.result[0]) {
@@ -77,7 +77,7 @@ schema.getSchemaAttributes = async function(schema, data_obj) {
 
 
 schema.getSchemaCardLinks = async function(rid) {
-	const query = `MATCH (s:Schema)-[r]-(t:Schema) WHERE id(s) = "#${rid}"
+	const query = `MATCH (s:Nodes)-[r]-(t:Nodes) WHERE id(s) = "#${rid}"
 	RETURN COALESCE(s.label, s._type) as source,  TYPE(r) as type, r.label as label, r.label_rev as label_rev, COALESCE(t.label, t._type) as target, id(t) as target_id, id(r) as rid, r.compound as compound, r.tags as tags, r as relation,
 	       CASE WHEN STARTNODE(r) = s THEN 'outgoing' ELSE 'incoming' END AS direction`
 	return await web.cypher(query)
@@ -88,7 +88,7 @@ schema.exportSchemaYAML = async function(filename) {
 	if(!filename) throw('You need to give a file name! ')
 	var vertex_ids = {}
 	var edge_ids = {}
-	var query = 'MATCH (schema:Schema) OPTIONAL MATCH (schema)-[r]-(schema2:Schema) RETURN schema, r, schema2 '
+	var query = 'MATCH (schema:Nodes) OPTIONAL MATCH (schema)-[r]-(schema2:Nodes) RETURN schema, r, schema2 '
 	var schemas = await web.cypher( query, {serializer: 'graph'})
 	var output = {nodes: [], edges: []}
 	for(var vertex of schemas.result.vertices) {
@@ -136,7 +136,7 @@ schema.importSchemaYAML = async function(filename, mode) {
 			// make sure that system nodes are allways present
 			const filePathSystem = path.resolve('./schemas', filename)
 			const system_schema = await fsPromises.readFile(filePathSystem, 'utf8')
-			var query = 'MATCH (s:Schema) DETACH DELETE s'
+			var query = 'MATCH (s:Nodes) DETACH DELETE s'
 			var result = await web.cypher(query)
 			const system_schema_data = yaml.load(system_schema)
 			await writeSchemaToDB(system_schema_data)
@@ -153,37 +153,36 @@ schema.importSchemaYAML = async function(filename, mode) {
 
 
 
-schema.importSystemSchema = async function() {
-	var query = 'MATCH (s:Schema ) WHERE s._type = "Person" return s'
-	var response = await web.cypher(query)
-	if(response.result.length === 0) {
-		console.log('System schema not loaded. Importing...')
-		await this.importSchemaYAML('.system.yaml')
-	}
-}
-
-
-
 async function writeSchemaToDB(schema) {
 	try {
 		for(var node of schema.nodes) {
 			const type = Object.keys(node)[0]
+
+			await web.createVertexType(type)
+
 			var attributes = []
 			for(var key of Object.keys(node[type])) {
-				attributes.push(`s.${key} = "${node[type][key]}"`)
+				attributes.push(`${key} = "${node[type][key]}"`)
 			}
-			attributes.push(`s._type = "${type}"`)
-			node[type].type = type
-			var insert = `MERGE (s:Schema {_type: "${type}"}) SET ${attributes.join(',')}`
-			var reponse = await web.cypher( insert)
+			if(!attributes.some(i => i.includes('label'))) attributes.push(`label = "${type}"`)
+			attributes.push(`_type = "${type}"`)
+			var insert = `UPDATE Nodes SET ${attributes.join(',')} UPSERT WHERE _type = "${type}"`
+			console.log(insert)
+			var reponse = await web.sql( insert)
 		}
 
 		for(var edge of schema.edges) {
-			const type = Object.keys(edge)[0]
-			var edge_parts = type.split(':')
-			var link_query = `MATCH (from:Schema {_type: "${edge_parts[0]}"}), (to: Schema {_type:"${edge_parts[2]}"}) MERGE (from)-[r:${edge_parts[1]}]->(to) SET r.label ="${edge[type].label}", r.label_rev = "${edge[type].label_rev}"`
-			var reponse = await web.cypher( link_query)
+		 	const type = Object.keys(edge)[0]
+		 	var edge_parts = type.split(':')
+
+			await web.createEdgeType(edge_parts[1])
+
+			const link_sql = `CREATE EDGE ${edge_parts[1]} FROM (SELECT FROM Nodes WHERE _type = "${edge_parts[0]}") TO
+			 (SELECT FROM Nodes WHERE _type = "${edge_parts[2]}") IF NOT EXISTS SET label = "${edge[type].label}", label_rev = "${edge[type].label_rev}" `
+		 	console.log(link_sql)
+		 	var reponse = await web.sql( link_sql)
 		}
+
 	} catch (e) {
 		throw(e)
 	}
