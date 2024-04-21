@@ -295,33 +295,43 @@ module.exports = class Graph {
 	async merge(type, node) {
 		var attributes = []
 		for(var key of Object.keys(node[type])) {
-			attributes.push(`s.${key} = "${node[type][key]}"`)
+			if(!key.startsWith('@')) {
+				if (typeof node[type][key] === 'string') {
+					var data = node[type][key].replace(/\n/g, '\\n')
+					data = data.replace(/"/g, '\\"')
+					attributes.push(`${key} = "${data}"`)	
+				} else {
+					attributes.push(`${key} = "${node[type][key]}"`)
+				}
+			}
 		}
 		// set some system attributes to all Persons
 		if(type === 'Person') {
-			if(!node['_group']) attributes.push(`s._group = "user"`) // default user group for all persons
-			if(!node['_access']) attributes.push(`s._access = "user"`) // default access for all persons
+			if(!node[type]['_group']) attributes.push(`_group = "user"`) // default user group for all persons
+			if(!node[type]['_access']) attributes.push(`_access = "user"`) // default access for all persons
 		}
 		// _active
-		attributes.push(`s._active = true`)
+		attributes.push(`_active = true`)
 		// merge only if there is ID for node
 		if('id' in node[type]) {
-			var insert = `MERGE (s:${type} {id:"${node[type].id}"}) SET ${attributes.join(',')} RETURN s`
+			var insert_sql = `UPDATE ${type} SET ${attributes.join(',')} UPSERT WHERE id = "${node[type].id}"`
+			console.log(insert_sql)
 			try {
-				var response = await web.cypher( insert)
+				var response = await web.sql(insert_sql)
 				console.log(response)
 				this.docIndex.add({id: response.result[0]['@rid'],label:node.label})
 				return response.data
 
 			} catch (e) {
 				try {
+					console.log('Adding vertex Type')
 					await web.createVertexType(type)
-					var response = await web.cypher( insert)
-					console.log(response)
+					var response = await web.sql(insert_sql)
+					//console.log(response)
 					this.docIndex.add({id: response.result[0]['@rid'],label:node.label})
 					return response.data
 				} catch(e) {
-					console.log(e)
+					console.log(e.message)
 					throw('Merge failed!')
 				}
 			}
@@ -335,22 +345,26 @@ module.exports = class Graph {
 		
 		// NOTE: we cannnot use Cypher's merge, since it includes attributes in comparision
 		// TODO: Currently we do not update attributes for existing links
-		if(edge.from && edge.to && edge.relation) {
+		if(edge.from_id && edge.to_id && edge.relation) {
 			
-			try {
-				const query = `MATCH (from)-[:${edge.relation}]->(to) WHERE from.id = "${edge.from}" AND to.id = "${edge.to}" RETURN from, to`
-				var response = await web.cypher(query)
+			const link_sql = `CREATE EDGE ${edge.relation} from (SELECT FROM ${edge.from_type} WHERE id = "${edge.from_id}") TO (SELECT FROM ${edge.to_type} WHERE id =  "${edge.to_id}") IF NOT EXISTS`
+			console.log(link_sql)
 
-				// if relation is not found, create it
-				if(response.result.length === 0) {
-					return await this.connect(edge.from, edge.relation, edge.to,  MATCH_BY_ID, edge.attributes)
-				}
+			try {
+				var response = await web.sql(link_sql)
 			} catch(e) {
-				console.log(e)
-				throw('Merge connection failed!')
+				try {
+					console.log('Adding Edge Type')
+					await web.createEdgeType(edge.relation)
+					var response = await web.sql(link_sql)
+				} catch(e) {
+					console.log(e.message)
+					throw('Merge connection failed!')
+				}
 			}
 		} else {
-			throw('Edge is not comple!\n' + edge)
+			console.log(edge)
+			throw('Edge is not complete!\n' + edge)
 		}
 
 	}
@@ -383,7 +397,7 @@ module.exports = class Graph {
 
 	// data = {from:[RID] ,relation: '', to: [RID]}
 	async connect(from, relation, to, match_by_id, attributes, auth_header) {
-		console.log('Connectiong vertices...')
+		console.log('Connecting vertices...')
 
 		try {
 			if(await this.hasConnectPermissions(from, to, auth_header)) {
@@ -410,10 +424,6 @@ module.exports = class Graph {
 		
 				// when we link normally, we use RID
 				var query = `MATCH (from), (to) WHERE id(from) = "${from}" AND id(to) = "${to}" CREATE (from)-[r:${relation_type} ${attributes_str}]->(to) RETURN from, r, to`
-				// when we import stuff, then we connect by id
-				if(match_by_id) {
-					query = `MATCH (from), (to) WHERE from.id = "${from}" AND to.id = "${to}" CREATE (from)-[r:${relation_type} ${attributes_str}]->(to) RETURN from, r, to`
-				}
 		
 				return web.cypher( query)
 			}
@@ -920,16 +930,7 @@ module.exports = class Graph {
 			const admin = await this.hasAdminPermissions(auth_header)
 
 			if(admin) {
-				if(mode == 'clear') {
-					await web.clearGraph()
-					await this.setSystemNodes()
-					await this.createSystemGraph()
-					await this.writeGraphToDB(graph_data, auth_header)
-				} else {
-					// otherwise we merge
-					await this.mergeGraphToDB(graph_data)
-				}
-	
+				await this.writeGraphToDB(graph_data, auth_header)
 				this.createIndex()
 			}
 
@@ -940,43 +941,34 @@ module.exports = class Graph {
 	}
 
 
-	async mergeGraphToDB(graph) {
-		try {
-			for(var node of graph.nodes) {
-				const type = Object.keys(node)[0]
-				await this.merge(type, node)
-			}
-			for(var edge of graph.edges) {
-				if(edge.Edge) await this.mergeConnect(edge.Edge)
-			}
-		} catch (e) {
-			throw(e)
-		}
-	}
-
-
 	async writeGraphToDB(graph, auth_header) {
 		try {
 			for(var node of graph.nodes) {
 				const type = Object.keys(node)[0]
-				await this.create(type, node[type], auth_header)
+				console.log(type)
+				await this.merge(type, node, auth_header)
 			}
 
 			for(var edge of graph.edges) {
+				console.log(edge)
 				// edges object format
 				if(edge.Edge) {
-					await this.connect(edge.Edge.from, edge.Edge.relation, edge.Edge.to, true, edge.Edge.attributes, auth_header)
+					await this.mergeConnect(edge)
 				// edges string format
 				} else {
 					const edge_key = Object.keys(edge)[0]
 					const splitted = edge_key.split('->')
+					var data = {}
 					if(splitted.length == 3) {
-						const link = splitted[1].trim()
+						data.relation = splitted[1].trim()
 						const [from_type, ...from_rest]= splitted[0].split(':')
 						const [to_type, ...to_rest] = splitted[2].split(':')
-						const from_id = from_rest.join(':').trim()
-						const to_id = to_rest.join(':').trim()
-						await this.connect(from_id, link, to_id, true, edge[edge_key], auth_header)
+						data.from_type = from_type
+						data.to_type = to_type
+						data.from_id = from_rest.join(':').trim()
+						data.to_id = to_rest.join(':').trim()
+						console.log(data)
+						await this.mergeConnect(data)
 					} else {
 						throw('Graph edge error: ' + Object.keys(edge)[0])
 					}

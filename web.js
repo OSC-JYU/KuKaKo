@@ -70,7 +70,7 @@ web.createEdgeType = async function(type) {
 	try {
 		await this.sql(query)
 	} catch (e) {
-		//console.log(e.message)
+		console.log(e.message)
 		//console.log(`${type} exists`)
 	}
 }
