@@ -85,7 +85,7 @@ styles.exportStyle = async function(filename) {
 	const filePath = path.resolve(__dirname, 'styles', filename)
 	const style = await this.getStyle()
 	const data = await fsPromises.writeFile(filePath, JSON.stringify(style, null, 2), 'utf8')
-	return
+	return {file: filename}
 
 }
 

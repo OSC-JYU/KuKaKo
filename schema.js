@@ -4,9 +4,11 @@ const yaml = require('js-yaml')
 const fsPromises = require('fs/promises')
 
 const web = require("./web.js")
+const user = require("./user.js")
 const NOT_REQUIRED = true
 
 let schema = {}
+
 
 schema.getSchemaRelations = async function(label) {
 	var query = ''
@@ -84,8 +86,11 @@ schema.getSchemaCardLinks = async function(rid) {
 }
 
 
-schema.exportSchemaYAML = async function(filename) {
+schema.exportSchemaYAML = async function(filename, auth_header) {
+	const admin = await user.hasAdminPermissions(auth_header)
+	if(!admin) throw('Permission denied')
 	if(!filename) throw('You need to give a file name! ')
+
 	var vertex_ids = {}
 	var edge_ids = {}
 	var query = 'MATCH (schema:Nodes) OPTIONAL MATCH (schema)-[r]-(schema2:Nodes) RETURN schema, r, schema2 '
@@ -129,7 +134,12 @@ schema.exportSchemaYAML = async function(filename) {
 
 
 
-schema.importSchemaYAML = async function(filename, mode) {
+schema.importSchemaYAML = async function(filename, mode, auth_header) {
+	if(auth_header != 'root') {
+		const admin = await user.hasAdminPermissions(auth_header)
+		if(!admin) throw('Permission denied')
+	}
+
 	console.log(`** importing schema ${filename} **`)
 	try {
 		if(mode == 'clear') {

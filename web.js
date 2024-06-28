@@ -91,24 +91,6 @@ web.sql = async function(query, options) {
 	return response
 }
 
-// function that bypasses Cypher issue for deleting data
-web.clearGraph = async function(query) {
-	const { default: got } = await import('got');
-	query = 'g.V().not(hasLabel("Schema")).drop()'
-
-
-	var data = {
-		username: username,
-		password: password,
-		json: {
-			command:query,
-			language:'gremlin'
-		}
-	}
-
-	return await got.post(DB_URL, data).json()
-
-}
 
 web.getGraph = async function(query, options, debug) {
 

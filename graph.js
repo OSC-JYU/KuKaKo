@@ -5,6 +5,7 @@ const fsPromises = require('fs/promises')
 
 const schema = require("./schema.js")
 const web = require("./web.js")
+const user = require('./user.js');
 
 const timers = require('timers-promises')
 
@@ -72,7 +73,7 @@ module.exports = class Graph {
 		try {
 			// database exist, make sure that some base types are present
 			await web.createVertexType('Nodes')
-			await schema.importSchemaYAML('.system.yaml')
+			await schema.importSchemaYAML('.system.yaml', null, 'root')
 			await this.createSystemGraph()
 			// Make sure that base system graph exists
 
@@ -114,7 +115,8 @@ module.exports = class Graph {
 
 	async createIndex() {
 		console.log('Starting to index with flexsearch ...')
-		var query = 'MATCH (n) return id(n) as id, n.label as label, n.description as description'
+		//var query = `MATCH (n) return id(n) as id, COALESCE(n.label ,"") + ', ' + COALESCE(n.description ,"") as label`
+		var query = `MATCH (n) return id(n) as id, n.label AS label, n.description AS description`
 		try {
 			var result = await web.cypher( query)
 			try {
@@ -129,10 +131,18 @@ module.exports = class Graph {
 				process.exit(1)
 			}
 
+			// edge attributes
+			// const edges = 'SELECT OUT().@rid AS id, OUT().label AS label, OUTE().attr AS attr FROM Person' 
+			// var result_edge = await web.sql( edges)
+			// for (var node of result_edge.result) {
+			// 	console.log(node)
+
+			// }
 		} catch(e) {
 			console.log(`Could not find database. \nIs Arcadedb running at ${web.getURL()}?`)
 			process.exit(1)
 		}
+
 
 	}
 
@@ -142,76 +152,6 @@ module.exports = class Graph {
 		return web.cypher( body.query)
 	}
 
-	async hasAdminPermissions(auth_header) {
-		var me = await this.myId(auth_header)
-		if(me.access === 'admin') {
-			return true
-		}
-		return false
-	}
-
-	async hasCreatePermissions(type_data, auth_header) {
-		var me = await this.myId(auth_header)
-		if(me.access === 'admin') {
-			return true
-		} else if(me.access === 'creator' && type_data.label !== 'Nodes') {
-			return true
-		} else if(me.access === 'user' && type_data._public) {
-			return true
-		}
-		return false
-	}
-
-
-	async hasDeletePermissions(auth_header) {
-		var me = await this.myId(auth_header)
-		if(me.access === 'admin') {
-			return true
-		} else return false
-	}
-
-
-	async hasConnectPermissions(from, to, auth_header) {
-		var me = await this.myId(auth_header)
-		from = this.checkHastag(from)
-		to = this.checkHastag(to)
-
-		// one can join oneself
-		if(me.rid === from || me.rid === to)
-			return true
-		if(me.access === 'creator' || me.access === 'admin') {
-			return true
-		} 
-		// TODO: this must check that Schema can be connected only by admin
-		return false
-	}
-
-	async hasNodeAttributePermissions(node_rid, auth_header) {
-		var me = await this.myId(auth_header)
-		node_rid = this.checkHastag(node_rid)
-
-		// one can set one's own attributes
-		if(me.rid === node_rid)
-			return true
-		if(me.access === 'admin') {
-			return true
-		} 
-		return false
-	}
-
-
-	async hasEdgeAttributePermissions(from, to, auth_header) {
-		var me = await this.myId(auth_header)
-		from = this.checkHastag(from)
-		to = this.checkHastag(to)
-
-		if(me.rid === from || me.rid === to)
-			return true
-		if(me.access === 'creator' || me.access === 'admin') {
-			return true
-		} 
-		return false
-	}
 
 
 
@@ -226,7 +166,7 @@ module.exports = class Graph {
 			}
 			
 			console.log(type_attributes)
-			const privileged = await this.hasCreatePermissions(type_attributes, auth_header)
+			const privileged = await user.hasCreatePermissions(type_attributes, auth_header)
 			if(!privileged) {
 				throw(`no rights to add "${type}"`)
 			}
@@ -273,7 +213,7 @@ module.exports = class Graph {
 
 	async deleteNode(rid, auth_header) {
 		try {
-			if(await this.hasDeletePermissions(auth_header)) {
+			if(await user.hasDeletePermissions(auth_header)) {
 				rid = this.checkHastag(rid)
 				var query = `MATCH (n) WHERE id(n) = '${rid}' RETURN labels(n) as type`
 				var response = await web.cypher(query)
@@ -343,18 +283,22 @@ module.exports = class Graph {
 	// TODO
 	async mergeConnect(edge) {
 		
-		// NOTE: we cannnot use Cypher's merge, since it includes attributes in comparision
-		// TODO: Currently we do not update attributes for existing links
+		var relation_attr = ''
+		if(edge.attr) relation_attr = ` CONTENT {"attr": "${edge.attr}"}`
 		if(edge.from_id && edge.to_id && edge.relation) {
 			
-			const link_sql = `CREATE EDGE ${edge.relation} from (SELECT FROM ${edge.from_type} WHERE id = "${edge.from_id}") TO (SELECT FROM ${edge.to_type} WHERE id =  "${edge.to_id}") IF NOT EXISTS`
-			console.log(link_sql)
+			const link_sql = `CREATE EDGE ${edge.relation} from (SELECT FROM ${edge.from_type} WHERE id = "${edge.from_id}") TO (SELECT FROM ${edge.to_type} WHERE id =  "${edge.to_id}")  IF NOT EXISTS`
+
 
 			try {
-				var response = await web.sql(link_sql)
+				await web.sql(link_sql)
+				if(edge.attr) {
+					const update_atrr = `MATCH (p:${edge.from_type} {id : "${edge.from_id}"})-[r:${edge.relation}]->(s:${edge.to_type} {id :"${edge.to_id}"}) SET r.attr = "${edge.attr}" RETURN p,r,s`
+					await web.cypher(update_atrr)
+				}
 			} catch(e) {
 				try {
-					console.log('Adding Edge Type')
+					//console.log('Adding Edge Type')
 					await web.createEdgeType(edge.relation)
 					var response = await web.sql(link_sql)
 				} catch(e) {
@@ -370,7 +314,9 @@ module.exports = class Graph {
 	}
 
 
+	async appendEdgeAttribute() {
 
+	}
 
 
 	async getEdgeTargets(edge_rid) {
@@ -400,7 +346,7 @@ module.exports = class Graph {
 		console.log('Connecting vertices...')
 
 		try {
-			if(await this.hasConnectPermissions(from, to, auth_header)) {
+			if(await user.hasConnectPermissions(from, to, auth_header)) {
 
 				var attributes_str = ''
 				var relation_type = ''
@@ -409,7 +355,6 @@ module.exports = class Graph {
 					from = this.checkHastag(from)
 					to = this.checkHastag(to)
 				}
-				const permissions = await this.hasConnectPermissions(from, to, auth_header)
 				
 				if(typeof relation == 'object') {
 					relation_type = relation.type
@@ -456,7 +401,7 @@ module.exports = class Graph {
 	async deleteEdge(rid, auth_header) {
 		try {
 			var targets = await this.getEdgeTargets(rid)
-			if(await this.hasConnectPermissions(targets.from, targets.to, auth_header)) {
+			if(await user.hasConnectPermissions(targets.from, targets.to, auth_header)) {
 				rid = this.checkHastag(rid)
 				var query = `MATCH (from)-[r]->(to) WHERE id(r) = '${rid}' DELETE r`
 				return web.cypher( query)
@@ -475,7 +420,7 @@ module.exports = class Graph {
 	async setEdgeAttribute(rid, data, auth_header) {
 		try {
 			var targets = await this.getEdgeTargets(rid)
-			if(this.hasEdgeAttributePermissions(targets.from, targets.to, auth_header)) {
+			if(user.hasEdgeAttributePermissions(targets.from, targets.to, auth_header)) {
 				rid = this.checkHastag(rid)
 				let query = `MATCH (from)-[r]->(to) WHERE id(r) = '${rid}' `
 				if(Array.isArray(data.value)) {
@@ -506,7 +451,7 @@ module.exports = class Graph {
 
 	async setNodeAttribute(rid, data, auth_header) {
 		try {
-			if(this.hasNodeAttributePermissions(rid, auth_header)) {
+			if(user.hasNodeAttributePermissions(rid, auth_header)) {
 				rid = this.checkHastag(rid)
 				let query = `MATCH (node) WHERE id(node) = '${rid}' `
 		
@@ -542,7 +487,7 @@ module.exports = class Graph {
 
 	async getGraph(query, ctx) {
 
-		var me = await this.myId(ctx.request.headers.mail)
+		var me = await user.myId(ctx.request.headers.mail)
 		// ME
 		if(query.includes('_ME_')) {
 			query = query.replace('_ME_', me.rid)
@@ -568,7 +513,7 @@ module.exports = class Graph {
 
 	async getGraphByNode(body, ctx) {
 
-		var me = await this.myId(ctx.request.headers.mail)
+		var me = await user.myId(ctx.request.headers.mail)
 		var schema_relations = null
 		// get schemas first so that one can map relations to labels
 		schema_relations = await this.getSchemaRelations()
@@ -589,7 +534,7 @@ module.exports = class Graph {
 
 	async getGraphByRelation(body, ctx) {
 
-		var me = await this.myId(ctx.request.headers.mail)
+		var me = await user.myId(ctx.request.headers.mail)
 		var schema_relations = null
 		// get schemas first so that one can map relations to labels
 		schema_relations = await this.getSchemaRelations()
@@ -610,7 +555,7 @@ module.exports = class Graph {
 
 	async getGraphNavigation(body, ctx) {
 
-		var me = await this.myId(ctx.request.headers.mail)
+		var me = await user.myId(ctx.request.headers.mail)
 		var schema_relations = null
 		// get schemas first so that one can map relations to labels
 		schema_relations = await this.getSchemaRelations()
@@ -631,7 +576,7 @@ module.exports = class Graph {
 
 	async getGraphByQueryRID(body, ctx) {
 
-		var me = await this.myId(ctx.request.headers.mail)
+		var me = await user.myId(ctx.request.headers.mail)
 		var schema_relations = null
 		// get schemas first so that one can map relations to labels
 		schema_relations = await this.getSchemaRelations()
@@ -654,7 +599,7 @@ module.exports = class Graph {
 	// currently used only for getting items on map
 	async getLinkedByNode(body, ctx) {
 
-		var me = await this.myId(ctx.request.headers.mail)
+		var me = await user.myId(ctx.request.headers.mail)
 		var schema_relations = null
 		// get schemas first so that one can map relations to labels
 		schema_relations = await this.getSchemaRelations()
@@ -674,7 +619,7 @@ module.exports = class Graph {
 
 	async getGraphByItemList(body, ctx) {
 		const items_str = body.items.map(x => `'#${x}'`).join(',')
-		var me = await this.myId(ctx.request.headers.mail)
+		var me = await user.myId(ctx.request.headers.mail)
 		var schema_relations = null
 		// get schemas first so that one can map relations to labels
 		schema_relations = await this.getSchemaRelations()
@@ -742,7 +687,20 @@ module.exports = class Graph {
 		if(search[0]) {
 			var arr = search[0].result.map(x => '"' + x + '"')
 			var query = `MATCH (n) WHERE id(n) in [${arr.join(',')}] AND NOT n:Schema return id(n) as id, n.label as label, labels(n) as type LIMIT 10`
-			return web.cypher( query)
+
+			var data = await web.cypher( query)
+			if(search[1]) {
+				arr = search[1].result.map(x => '"' + x + '"')
+				query = `MATCH (n) WHERE id(n) in [${arr.join(',')}] AND NOT n:Schema return id(n) as id, n.label as label, labels(n) as type LIMIT 10`
+			}
+			var data1 = await web.cypher( query)
+			data.result.concat(data1.result)
+			var out = {result: []}
+			out.result = data.result.concat(data1.result.filter(item2 =>
+				!data.result.some(item1 => item1.id === item2.id)
+			));
+
+			return out
 		} else {
 			return {result:[]}
 		}
@@ -807,13 +765,6 @@ module.exports = class Graph {
 	}
 
 
-	async myId(user) {
-		if(!user) throw('user not defined')
-		var query = `MATCH (me:Person {id:"${user}"}) return id(me) as rid, me._group as group, me._access as access`
-		var response = await web.cypher(query)
-		if(!response.result) throw('user not found!')
-		return response.result[0]
-	}
 
 
 	async getGroups() {
@@ -927,7 +878,7 @@ module.exports = class Graph {
 			const file_path = path.resolve('./graph', filename)
 			const data = await fsPromises.readFile(file_path, 'utf8')
 			const graph_data = yaml.load(data)
-			const admin = await this.hasAdminPermissions(auth_header)
+			const admin = await user.hasAdminPermissions(auth_header)
 
 			if(admin) {
 				await this.writeGraphToDB(graph_data, auth_header)
@@ -950,7 +901,7 @@ module.exports = class Graph {
 			}
 
 			for(var edge of graph.edges) {
-				console.log(edge)
+				
 				// edges object format
 				if(edge.Edge) {
 					await this.mergeConnect(edge)
@@ -967,7 +918,8 @@ module.exports = class Graph {
 						data.to_type = to_type
 						data.from_id = from_rest.join(':').trim()
 						data.to_id = to_rest.join(':').trim()
-						console.log(data)
+						if(edge[edge_key]['attr']) data.attr = edge[edge_key]['attr']
+						if(edge[edge_key]['attr']) console.log(data)
 						await this.mergeConnect(data)
 					} else {
 						throw('Graph edge error: ' + Object.keys(edge)[0])
@@ -980,8 +932,11 @@ module.exports = class Graph {
 	}
 
 
-	async exportGraphYAML(filename) {
+	async exportGraphYAML(filename, auth_header) {
+		const admin = await user.hasAdminPermissions(auth_header)
+		if(!admin) throw('Permission denied')
 		if(!filename) throw('You need to give a file name! ')
+
 		var vertex_ids = {}
 		var edge_ids = {}
 		var query = 'MATCH (n) WHERE NOT n:Nodes OPTIONAL MATCH (n)-[r]-() RETURN n, r '
@@ -1030,7 +985,6 @@ module.exports = class Graph {
 		await fsPromises.writeFile(filePath, yaml.dump(output), 'utf8')
 		return {file: filePath}
 	}
-
 
 
 	async exportText() {
