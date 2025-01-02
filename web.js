@@ -1,5 +1,5 @@
 
-const username = 'root'
+const username = process.env.DB_USERNAME || 'root'
 const password = process.env.DB_PASSWORD
 
 const MAX_STR_LENGTH = 2048
