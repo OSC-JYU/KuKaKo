@@ -641,8 +641,8 @@ module.exports = class Graph {
 	async getGraphByItemListRaw(body, ctx) {
 
 		const items_str = body.items.map(x => `'${x}'`).join(',')
-		var me = await this.myId(ctx.request.headers.mail)
-		var schema_relations = null
+		var me = await user.myId(ctx.request.headers.mail)
+		//var schema_relations = null
 		
 		const options = {
 			serializer: 'graph',
