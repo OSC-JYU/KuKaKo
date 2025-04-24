@@ -1,35 +1,43 @@
 
-const username = 'root'
+const username = process.env.DB_USERNAME || 'root'
 const password = process.env.DB_PASSWORD
 
 const MAX_STR_LENGTH = 2048
 const DB_HOST = process.env.DB_HOST || 'http://localhost'
 const DB = process.env.DB_NAME || 'kukako'
 const PORT = process.env.DB_PORT || 2480
-const URL = `${DB_HOST}:${PORT}/api/v1/command/${DB}`
+const DB_URL = `${DB_HOST}:${PORT}/api/v1/command/${DB}`
 const GROUP_THRESHOLD = process.env.GROUP_THRESHOLD || 1
 
 let web = {}
 
 web.getURL = function() {
-	return URL
+	return DB_URL
 }
 
-web.dbStatus = async function() {
-	const { default: got } = await import('got');
-	var url = URL.replace(`/command/${DB}`, '/ready')
 
+web.checkDB = async function() {
+	const { default: got } = await import('got');
+	var url = DB_URL.replace(`/command/`, '/exists/')
+	var data = {
+		username: username,
+		password: password
+	};
 	try {
-		await got.get(url)
+		var response = await got.get(url, data).json()
+		return response.result
+		
+		
 	} catch(e) {
-		throw({message: "DB connection failed", code: e.code})
+		console.log(e.message)
+		throw({message: "Error on database check", code: e.code})
 	}
 }
 
 
 web.createDB = async function() {
 	const { default: got } = await import('got');
-	var url = URL.replace(`/command/${DB}`, '/server')
+	var url = DB_URL.replace(`/command/${DB}`, '/server')
 	var data = {
 		username: username,
 		password: password,
@@ -47,11 +55,22 @@ web.createDB = async function() {
 }
 
 web.createVertexType = async function(type) {
-	var query = `CREATE vertex type ${type}`
+	var query = `CREATE VERTEX TYPE ${type} IF NOT EXISTS`
+	console.log(query)
 	try {
 		await this.sql(query)
 	} catch (e) {
-		//console.log(e.message)
+		console.log(e.message)
+	}
+}
+
+web.createEdgeType = async function(type) {
+	var query = `CREATE EDGE TYPE ${type} IF NOT EXISTS`
+	console.log(query)
+	try {
+		await this.sql(query)
+	} catch (e) {
+		console.log(e.message)
 		//console.log(`${type} exists`)
 	}
 }
@@ -68,28 +87,10 @@ web.sql = async function(query, options) {
 			language:'sql'
 		}
 	};
-	var response = await got.post(URL, data).json()
+	var response = await got.post(DB_URL, data).json()
 	return response
 }
 
-// function that bypasses Cypher issue for deleting data
-web.clearGraph = async function(query) {
-	const { default: got } = await import('got');
-	query = 'g.V().not(hasLabel("Schema")).drop()'
-
-
-	var data = {
-		username: username,
-		password: password,
-		json: {
-			command:query,
-			language:'gremlin'
-		}
-	}
-
-	return await got.post(URL, data).json()
-
-}
 
 web.getGraph = async function(query, options, debug) {
 
@@ -107,7 +108,7 @@ web.getGraph = async function(query, options, debug) {
 	};
 	
 	try {
-		var response = await got.post(URL, data).json()
+		var response = await got.post(DB_URL, data).json()
 		options.schemas = await getSchemaRelations(data)
 		options.labels = await getSchemaVertexLabels(data)
 		console.log(options)
@@ -139,7 +140,7 @@ web.cypher = async function(query, options, debug) {
 	if(debug) console.log(query)
 
 	try {
-		var response = await got.post(URL, data).json()
+		var response = await got.post(DB_URL, data).json()
 		if(query && query.toLowerCase().includes('create')) return response
 		else if(!options.serializer) return response
 		else if(options.serializer == 'graph' && options.format == 'cytoscape') {
@@ -149,6 +150,7 @@ web.cypher = async function(query, options, debug) {
 			return response
 		}
 	} catch(e) {
+		console.log(e)
 		throw({message: e.message, code: e.code})
 	}
 }
@@ -157,13 +159,13 @@ async function getSchemaVertexLabels(data) {
 
 	const { default: got } = await import('got');
 
-	const query = "MATCH (s:Schema)  RETURN COALESCE(s.label, s._type)  as label, s._type as type"
+	const query = "MATCH (s:Nodes)  RETURN COALESCE(s.label, s._type)  as label, s._type as type"
 	data.json = {
 		command:query,
 		language:'cypher'
 	}
 	try {
-		var response = await got.post(URL, data).json()
+		var response = await got.post(DB_URL, data).json()
 		var labels = response.result.reduce(
 			(obj, item) => Object.assign(obj, { [item.type]: item.label }), {});
 		return labels
@@ -176,13 +178,13 @@ async function getSchemaVertexLabels(data) {
 
 async function getSchemaRelations(data) {
 	const { default: got } = await import('got');
-	const query = 'MATCH (s:Schema)-[r]->(s2:Schema) return type(r) as type, r.label as label, r.label_rev as label_rev, COALESCE(r.label_inactive, r.label) as label_inactive, s._type as from, s2._type as to, r.tags as tags, r.compound as compound'
+	const query = 'MATCH (s:Nodes)-[r]->(s2:Nodes) return type(r) as type, r.label as label, r.label_rev as label_rev, COALESCE(r.label_inactive, r.label) as label_inactive, s._type as from, s2._type as to, r.tags as tags, r.compound as compound'
 	data.json = {
 		command:query,
 		language:'cypher'
 	}
 	var schema_relations = {}
-	var schemas = await got.post(URL, data).json()
+	var schemas = await got.post(DB_URL, data).json()
 	schemas.result.forEach(x => {
 		schema_relations[`${x.from}:${x.type}:${x.to}`] = x
 	})

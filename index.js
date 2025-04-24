@@ -15,6 +15,7 @@ const Gitlab 		= require('./gitlab.js');
 const styles 		= require('./styles.js');
 const schema 		= require('./schema.js');
 const media 		= require('./media.js');
+const user 			= require('./user.js');
 //const smartSearch 	= require('./smartSearch.js');
 
 
@@ -28,7 +29,7 @@ let semanticsearch
 		tokenize: "full",
 		document: {
 			id: "id",
-			index: ["label", "description", "URL"]
+			index: ["label", "URL", "description"]
 		}
 	})
 	graph = new Graph()
@@ -104,7 +105,7 @@ app.use(async function handleError(context, next) {
 	if(process.env.CREATE_USERS_ON_THE_FLY) {
 		await next()
 	} else {
-		var me = await graph.myId(context.request.headers[AUTH_HEADER])
+		var me = await user.myId(context.request.headers[AUTH_HEADER])
 		if(!me) {
 			context.status = 401
 		} else {
@@ -153,7 +154,7 @@ router.get('/api/me', async function (ctx) {
 			await graph.checkMe(ctx.request.headers[AUTH_HEADER])
 		}
 	}
-	var me = await graph.myId(ctx.request.headers[AUTH_HEADER])
+	var me = await user.myId(ctx.request.headers[AUTH_HEADER])
 	ctx.body = {rid: me.rid, admin: me.admin, group:me.group, access:me.access, id: ctx.request.headers[AUTH_HEADER], mode:process.env.MODE ? process.env.MODE : 'production', semanticsearch: semanticsearch }
 })
 
@@ -220,12 +221,12 @@ router.post('/api/styles/import', async function (ctx) {
 })
 
 router.post('/api/styles/export', async function (ctx) {
-	var n = await styles.exportStyle(ctx.request.query.filename)
+	var n = await styles.exportStyle(ctx.request.query.filename, ctx.request.headers[AUTH_HEADER])
 	ctx.body = n
 })
 
 router.get('/api/menus', async function (ctx) {
-	var me = await graph.myId(ctx.request.headers[AUTH_HEADER])
+	var me = await user.myId(ctx.request.headers[AUTH_HEADER])
 	var n = await graph.getMenus(me.group)
 	ctx.body = n
 })
@@ -256,7 +257,7 @@ router.get('/api/schemas/:schema', async function (ctx) {
 })
 
 router.post('/api/schemas/export', async function (ctx) {
-	var n = await schema.exportSchemaYAML(ctx.request.query.filename)
+	var n = await schema.exportSchemaYAML(ctx.request.query.filename, ctx.request.headers[AUTH_HEADER])
 	ctx.body = n
 })
 
@@ -271,7 +272,7 @@ router.post('/api/graph/import', async function (ctx) {
 })
 
 router.post('/api/graph/export', async function (ctx) {
-	var n = await graph.exportGraphYAML(ctx.request.query.filename, ctx.request.query.mode)
+	var n = await graph.exportGraphYAML(ctx.request.query.filename, ctx.request.headers[AUTH_HEADER])
 	ctx.body = n
 })
 
@@ -280,10 +281,10 @@ router.get('/api/graph/stats', async function (ctx) {
 	ctx.body = n
 })
 
-router.post('/api/graph/query/me', async function (ctx) {
-	var n = await graph.myGraph(user, ctx.request.body)
-	ctx.body = n
-})
+// router.post('/api/graph/query/me', async function (ctx) {
+// 	var n = await graph.myGraph(user, ctx.request.body)
+// 	ctx.body = n
+// })
 
 router.post('/api/graph/by_node', async function (ctx) {
 	var n = await graph.getGraphByNode(ctx.request.body, ctx)
@@ -389,19 +390,19 @@ router.post('/api/graph/edges/:rid', async function (ctx) {
 	ctx.body = n
 })
 
-router.post('/api/graph/edges/connect/me', async function (ctx) {
-	var me = await graph.myId(user)
-	ctx.request.body.from = me
-	var n = await graph.connect(ctx.request.body)
-	ctx.body = n
-})
+// router.post('/api/graph/edges/connect/me', async function (ctx) {
+// 	var me = await user.myId(user)
+// 	ctx.request.body.from = me
+// 	var n = await graph.connect(ctx.request.body)
+// 	ctx.body = n
+// })
 
-router.post('/api/graph/edges/unconnect/me', async function (ctx) {
-	var me = await graph.myId(user)
-	ctx.request.body.from = me
-	var n = await graph.unconnect(ctx.request.body)
-	ctx.body = n
-})
+// router.post('/api/graph/edges/unconnect/me', async function (ctx) {
+// 	var me = await user.myId(user)
+// 	ctx.request.body.from = me
+// 	var n = await graph.unconnect(ctx.request.body)
+// 	ctx.body = n
+// })
 
 router.get('/api/graph/export/text', async function (ctx) {
 	var n = await graph.exportText()
@@ -414,13 +415,13 @@ router.get('/api/graph/export/json', async function (ctx) {
 })
 
 router.post('/api/layouts', async function (ctx) {
-	var me = await graph.myId(ctx.request.headers[AUTH_HEADER])
+	var me = await user.myId(ctx.request.headers[AUTH_HEADER])
 	var n = await graph.setLayout(ctx.request.body, me)
 	ctx.body = n
 })
 
 router.get('/api/layouts/:rid', async function (ctx) {
-	var me = await graph.myId(ctx.request.headers[AUTH_HEADER])
+	var me = await user.myId(ctx.request.headers[AUTH_HEADER])
 	var n = await graph.getLayoutByTarget(ctx.request.params.rid, me)
 	ctx.body = n
 })

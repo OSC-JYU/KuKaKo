@@ -5,6 +5,7 @@ const fsPromises = require('fs/promises')
 
 const schema = require("./schema.js")
 const web = require("./web.js")
+const user = require('./user.js');
 
 const timers = require('timers-promises')
 
@@ -20,11 +21,17 @@ module.exports = class Graph {
 		console.log(`ArcadeDB: ${web.getURL()}`)
 		console.log(`Checking database...`)
 		this.docIndex = docIndex
-		const query = 'MATCH (n:Schema) return n'
 
 		try {
-			await web.cypher(query)
+			const db_exists = await web.checkDB()
+			if(!db_exists) {
+				console.log('Creating database...')
+				await web.createDB()
+			}
+			console.log('done')
+			
 		} catch (e) {
+			console.log(e)
 			try {
 				if(e.code == 'ERR_GOT_REQUEST_ERROR') {
 					console.log('Request error! Check database. Did you set DB_PASSWORD? exiting...')
@@ -35,8 +42,11 @@ module.exports = class Graph {
 					console.log('database not ready, waiting 10 seconds...')
 					await timers.setTimeout(10000)
 				}
-				console.log('Checking database...')
-				var result = await web.cypher(query)
+
+				if(e.code == 'ERR_NON_2XX_3XX_RESPONSE') {
+					console.log('Request error! Check database. Did you set DB_PASSWORD? exiting...')
+					process.exit(1)
+				}
 			} catch (e) {
 				if(e.code == 'ECONNREFUSED') {
 					console.log(`ERROR: Database connection refused! \nIs Arcadedb running at ${web.getURL()}?`)
@@ -62,13 +72,8 @@ module.exports = class Graph {
 	async setSystemNodes() {
 		try {
 			// database exist, make sure that some base types are present
-			await web.createVertexType('Schema')
-			await web.createVertexType('Person')
-			await web.createVertexType('UserGroup')
-			await web.createVertexType('Menu')
-			await web.createVertexType('Query')
-			await web.createVertexType('Tag')
-			await schema.importSystemSchema()
+			await web.createVertexType('Nodes')
+			await schema.importSchemaYAML('.system.yaml', null, 'root')
 			await this.createSystemGraph()
 			// Make sure that base system graph exists
 
@@ -86,8 +91,8 @@ module.exports = class Graph {
 		try {
 
 			// Usergroup "Basic"
-			var query = 'MERGE (m:UserGroup {id:"user"}) SET m.label = "User", m._active = true RETURN m'
-			var group = await web.cypher(query)
+			var query = 'UPDATE UserGroup SET id = "user", label = "User", _active = true UPSERT WHERE id = "user"'
+			var group = await web.sql(query)
 
 			// Menu "Me"
 			// var query = 'MERGE (m:Menu {id:"me"}) SET m.label = "Me", m._active = true RETURN m'
@@ -99,8 +104,8 @@ module.exports = class Graph {
 			// await web.cypher(query)
 
 			// default local user
-			query = `MERGE (p:Person {id:"local.user@localhost"}) SET p._group = "user", p._access = "admin", p._active = true, p.label = "Local You", p.description = "It's really You!" RETURN p`
-			await web.cypher(query)
+			query = `UPDATE Person SET id = 'local.user@localhost', label='Local You', _group = 'user', _access = 'admin', _active = true, description = "It's really You! " UPSERT WHERE id = 'local.user@localhost'`
+			await web.sql(query)
 		} catch (e) {
 			console.log(query)
 			throw('System graph creation failed')
@@ -110,7 +115,8 @@ module.exports = class Graph {
 
 	async createIndex() {
 		console.log('Starting to index with flexsearch ...')
-		var query = 'MATCH (n) return id(n) as id, n.label as label, n.description as description'
+		//var query = `MATCH (n) return id(n) as id, COALESCE(n.label ,"") + ', ' + COALESCE(n.description ,"") as label`
+		var query = `MATCH (n) return id(n) as id, n.label AS label, n.description AS description`
 		try {
 			var result = await web.cypher( query)
 			try {
@@ -125,10 +131,18 @@ module.exports = class Graph {
 				process.exit(1)
 			}
 
+			// edge attributes
+			// const edges = 'SELECT OUT().@rid AS id, OUT().label AS label, OUTE().attr AS attr FROM Person' 
+			// var result_edge = await web.sql( edges)
+			// for (var node of result_edge.result) {
+			// 	console.log(node)
+
+			// }
 		} catch(e) {
-			console.log(`Could not find database. \nIs Arcadedb running at ${URL}?`)
+			console.log(`Could not find database. \nIs Arcadedb running at ${web.getURL()}?`)
 			process.exit(1)
 		}
+
 
 	}
 
@@ -138,76 +152,6 @@ module.exports = class Graph {
 		return web.cypher( body.query)
 	}
 
-	async hasAdminPermissions(auth_header) {
-		var me = await this.myId(auth_header)
-		if(me.access === 'admin') {
-			return true
-		}
-		return false
-	}
-
-	async hasCreatePermissions(type_data, auth_header) {
-		var me = await this.myId(auth_header)
-		if(me.access === 'admin') {
-			return true
-		} else if(me.access === 'creator' && type_data.label !== 'Schema') {
-			return true
-		} else if(me.access === 'user' && type_data._public) {
-			return true
-		}
-		return false
-	}
-
-
-	async hasDeletePermissions(auth_header) {
-		var me = await this.myId(auth_header)
-		if(me.access === 'admin') {
-			return true
-		} else return false
-	}
-
-
-	async hasConnectPermissions(from, to, auth_header) {
-		var me = await this.myId(auth_header)
-		from = this.checkHastag(from)
-		to = this.checkHastag(to)
-
-		// one can join oneself
-		if(me.rid === from || me.rid === to)
-			return true
-		if(me.access === 'creator' || me.access === 'admin') {
-			return true
-		} 
-		// TODO: this must check that Schema can be connected only by admin
-		return false
-	}
-
-	async hasNodeAttributePermissions(node_rid, auth_header) {
-		var me = await this.myId(auth_header)
-		node_rid = this.checkHastag(node_rid)
-
-		// one can set one's own attributes
-		if(me.rid === node_rid)
-			return true
-		if(me.access === 'admin') {
-			return true
-		} 
-		return false
-	}
-
-
-	async hasEdgeAttributePermissions(from, to, auth_header) {
-		var me = await this.myId(auth_header)
-		from = this.checkHastag(from)
-		to = this.checkHastag(to)
-
-		if(me.rid === from || me.rid === to)
-			return true
-		if(me.access === 'creator' || me.access === 'admin') {
-			return true
-		} 
-		return false
-	}
 
 
 
@@ -222,7 +166,7 @@ module.exports = class Graph {
 			}
 			
 			console.log(type_attributes)
-			const privileged = await this.hasCreatePermissions(type_attributes, auth_header)
+			const privileged = await user.hasCreatePermissions(type_attributes, auth_header)
 			if(!privileged) {
 				throw(`no rights to add "${type}"`)
 			}
@@ -269,7 +213,7 @@ module.exports = class Graph {
 
 	async deleteNode(rid, auth_header) {
 		try {
-			if(await this.hasDeletePermissions(auth_header)) {
+			if(await user.hasDeletePermissions(auth_header)) {
 				rid = this.checkHastag(rid)
 				var query = `MATCH (n) WHERE id(n) = '${rid}' RETURN labels(n) as type`
 				var response = await web.cypher(query)
@@ -291,33 +235,43 @@ module.exports = class Graph {
 	async merge(type, node) {
 		var attributes = []
 		for(var key of Object.keys(node[type])) {
-			attributes.push(`s.${key} = "${node[type][key]}"`)
+			if(!key.startsWith('@')) {
+				if (typeof node[type][key] === 'string') {
+					var data = node[type][key].replace(/\n/g, '\\n')
+					data = data.replace(/"/g, '\\"')
+					attributes.push(`${key} = "${data}"`)	
+				} else {
+					attributes.push(`${key} = "${node[type][key]}"`)
+				}
+			}
 		}
 		// set some system attributes to all Persons
 		if(type === 'Person') {
-			if(!node['_group']) attributes.push(`s._group = "user"`) // default user group for all persons
-			if(!node['_access']) attributes.push(`s._access = "user"`) // default access for all persons
+			if(!node[type]['_group']) attributes.push(`_group = "user"`) // default user group for all persons
+			if(!node[type]['_access']) attributes.push(`_access = "user"`) // default access for all persons
 		}
 		// _active
-		attributes.push(`s._active = true`)
+		attributes.push(`_active = true`)
 		// merge only if there is ID for node
 		if('id' in node[type]) {
-			var insert = `MERGE (s:${type} {id:"${node[type].id}"}) SET ${attributes.join(',')} RETURN s`
+			var insert_sql = `UPDATE ${type} SET ${attributes.join(',')} UPSERT WHERE id = "${node[type].id}"`
+			console.log(insert_sql)
 			try {
-				var response = await web.cypher( insert)
+				var response = await web.sql(insert_sql)
 				console.log(response)
 				this.docIndex.add({id: response.result[0]['@rid'],label:node.label})
 				return response.data
 
 			} catch (e) {
 				try {
+					console.log('Adding vertex Type')
 					await web.createVertexType(type)
-					var response = await web.cypher( insert)
-					console.log(response)
+					var response = await web.sql(insert_sql)
+					//console.log(response)
 					this.docIndex.add({id: response.result[0]['@rid'],label:node.label})
 					return response.data
 				} catch(e) {
-					console.log(e)
+					console.log(e.message)
 					throw('Merge failed!')
 				}
 			}
@@ -329,30 +283,40 @@ module.exports = class Graph {
 	// TODO
 	async mergeConnect(edge) {
 		
-		// NOTE: we cannnot use Cypher's merge, since it includes attributes in comparision
-		// TODO: Currently we do not update attributes for existing links
-		if(edge.from && edge.to && edge.relation) {
+		var relation_attr = ''
+		if(edge.attr) relation_attr = ` CONTENT {"attr": "${edge.attr}"}`
+		if(edge.from_id && edge.to_id && edge.relation) {
 			
-			try {
-				const query = `MATCH (from)-[:${edge.relation}]->(to) WHERE from.id = "${edge.from}" AND to.id = "${edge.to}" RETURN from, to`
-				var response = await web.cypher(query)
+			const link_sql = `CREATE EDGE ${edge.relation} from (SELECT FROM ${edge.from_type} WHERE id = "${edge.from_id}") TO (SELECT FROM ${edge.to_type} WHERE id =  "${edge.to_id}")  IF NOT EXISTS`
 
-				// if relation is not found, create it
-				if(response.result.length === 0) {
-					return await this.connect(edge.from, edge.relation, edge.to,  MATCH_BY_ID, edge.attributes)
+
+			try {
+				await web.sql(link_sql)
+				if(edge.attr) {
+					const update_atrr = `MATCH (p:${edge.from_type} {id : "${edge.from_id}"})-[r:${edge.relation}]->(s:${edge.to_type} {id :"${edge.to_id}"}) SET r.attr = "${edge.attr}" RETURN p,r,s`
+					await web.cypher(update_atrr)
 				}
 			} catch(e) {
-				console.log(e)
-				throw('Merge connection failed!')
+				try {
+					//console.log('Adding Edge Type')
+					await web.createEdgeType(edge.relation)
+					var response = await web.sql(link_sql)
+				} catch(e) {
+					console.log(e.message)
+					throw('Merge connection failed!')
+				}
 			}
 		} else {
-			throw('Edge is not comple!\n' + edge)
+			console.log(edge)
+			throw('Edge is not complete!\n' + edge)
 		}
 
 	}
 
 
+	async appendEdgeAttribute() {
 
+	}
 
 
 	async getEdgeTargets(edge_rid) {
@@ -379,10 +343,10 @@ module.exports = class Graph {
 
 	// data = {from:[RID] ,relation: '', to: [RID]}
 	async connect(from, relation, to, match_by_id, attributes, auth_header) {
-		console.log('Connectiong vertices...')
+		console.log('Connecting vertices...')
 
 		try {
-			if(await this.hasConnectPermissions(from, to, auth_header)) {
+			if(await user.hasConnectPermissions(from, to, auth_header)) {
 
 				var attributes_str = ''
 				var relation_type = ''
@@ -391,7 +355,6 @@ module.exports = class Graph {
 					from = this.checkHastag(from)
 					to = this.checkHastag(to)
 				}
-				const permissions = await this.hasConnectPermissions(from, to, auth_header)
 				
 				if(typeof relation == 'object') {
 					relation_type = relation.type
@@ -406,10 +369,6 @@ module.exports = class Graph {
 		
 				// when we link normally, we use RID
 				var query = `MATCH (from), (to) WHERE id(from) = "${from}" AND id(to) = "${to}" CREATE (from)-[r:${relation_type} ${attributes_str}]->(to) RETURN from, r, to`
-				// when we import stuff, then we connect by id
-				if(match_by_id) {
-					query = `MATCH (from), (to) WHERE from.id = "${from}" AND to.id = "${to}" CREATE (from)-[r:${relation_type} ${attributes_str}]->(to) RETURN from, r, to`
-				}
 		
 				return web.cypher( query)
 			}
@@ -442,7 +401,7 @@ module.exports = class Graph {
 	async deleteEdge(rid, auth_header) {
 		try {
 			var targets = await this.getEdgeTargets(rid)
-			if(await this.hasConnectPermissions(targets.from, targets.to, auth_header)) {
+			if(await user.hasConnectPermissions(targets.from, targets.to, auth_header)) {
 				rid = this.checkHastag(rid)
 				var query = `MATCH (from)-[r]->(to) WHERE id(r) = '${rid}' DELETE r`
 				return web.cypher( query)
@@ -461,7 +420,7 @@ module.exports = class Graph {
 	async setEdgeAttribute(rid, data, auth_header) {
 		try {
 			var targets = await this.getEdgeTargets(rid)
-			if(this.hasEdgeAttributePermissions(targets.from, targets.to, auth_header)) {
+			if(user.hasEdgeAttributePermissions(targets.from, targets.to, auth_header)) {
 				rid = this.checkHastag(rid)
 				let query = `MATCH (from)-[r]->(to) WHERE id(r) = '${rid}' `
 				if(Array.isArray(data.value)) {
@@ -492,7 +451,7 @@ module.exports = class Graph {
 
 	async setNodeAttribute(rid, data, auth_header) {
 		try {
-			if(this.hasNodeAttributePermissions(rid, auth_header)) {
+			if(user.hasNodeAttributePermissions(rid, auth_header)) {
 				rid = this.checkHastag(rid)
 				let query = `MATCH (node) WHERE id(node) = '${rid}' `
 		
@@ -528,7 +487,7 @@ module.exports = class Graph {
 
 	async getGraph(query, ctx) {
 
-		var me = await this.myId(ctx.request.headers.mail)
+		var me = await user.myId(ctx.request.headers.mail)
 		// ME
 		if(query.includes('_ME_')) {
 			query = query.replace('_ME_', me.rid)
@@ -554,7 +513,7 @@ module.exports = class Graph {
 
 	async getGraphByNode(body, ctx) {
 
-		var me = await this.myId(ctx.request.headers.mail)
+		var me = await user.myId(ctx.request.headers.mail)
 		var schema_relations = null
 		// get schemas first so that one can map relations to labels
 		schema_relations = await this.getSchemaRelations()
@@ -575,7 +534,7 @@ module.exports = class Graph {
 
 	async getGraphByRelation(body, ctx) {
 
-		var me = await this.myId(ctx.request.headers.mail)
+		var me = await user.myId(ctx.request.headers.mail)
 		var schema_relations = null
 		// get schemas first so that one can map relations to labels
 		schema_relations = await this.getSchemaRelations()
@@ -596,7 +555,7 @@ module.exports = class Graph {
 
 	async getGraphNavigation(body, ctx) {
 
-		var me = await this.myId(ctx.request.headers.mail)
+		var me = await user.myId(ctx.request.headers.mail)
 		var schema_relations = null
 		// get schemas first so that one can map relations to labels
 		schema_relations = await this.getSchemaRelations()
@@ -617,7 +576,7 @@ module.exports = class Graph {
 
 	async getGraphByQueryRID(body, ctx) {
 
-		var me = await this.myId(ctx.request.headers.mail)
+		var me = await user.myId(ctx.request.headers.mail)
 		var schema_relations = null
 		// get schemas first so that one can map relations to labels
 		schema_relations = await this.getSchemaRelations()
@@ -640,7 +599,7 @@ module.exports = class Graph {
 	// currently used only for getting items on map
 	async getLinkedByNode(body, ctx) {
 
-		var me = await this.myId(ctx.request.headers.mail)
+		var me = await user.myId(ctx.request.headers.mail)
 		var schema_relations = null
 		// get schemas first so that one can map relations to labels
 		schema_relations = await this.getSchemaRelations()
@@ -663,7 +622,7 @@ module.exports = class Graph {
 	async getGraphByItemList(body, ctx) {
 
 		const items_str = body.items.map(x => `'#${x}'`).join(',')
-		var me = await this.myId(ctx.request.headers.mail)
+		var me = await user.myId(ctx.request.headers.mail)
 		var schema_relations = null
 		// get schemas first so that one can map relations to labels
 		schema_relations = await this.getSchemaRelations()
@@ -705,7 +664,7 @@ module.exports = class Graph {
 			format: 'cytoscape',
 			schemas: schema_relations
 		}
-		const query = `MATCH (s:Schema) WHERE NOT s._type IN ["Menu", "Query", "UserGroup", "Tag", "NodeGroup"] OPTIONAL MATCH (s)-[r]-(s2:Schema)  return s,r,s2`
+		const query = `MATCH (s:Nodes) WHERE NOT s._type IN ["Menu", "Query", "UserGroup", "Tag", "NodeGroup"] OPTIONAL MATCH (s)-[r]-(s2:Nodes)  return s,r,s2`
 		return await web.cypher(query, options)
 	}
 
@@ -720,7 +679,7 @@ module.exports = class Graph {
 			schemas: schema_relations
 		}
 		const query = 
-		`MATCH (s:Schema)-[r]-(s2:Schema) WHERE NOT s._type IN ["Menu", "Query", "UserGroup", "Tag", "NodeGroup"] AND "${tag}" IN r.tags return s,r,s2`
+		`MATCH (s:Nodes)-[r]-(s2:Nodes) WHERE NOT s._type IN ["Menu", "Query", "UserGroup", "Tag", "NodeGroup"] AND "${tag}" IN r.tags return s,r,s2`
 		return await web.cypher(query, options)
 	}
 
@@ -735,7 +694,7 @@ module.exports = class Graph {
 
 	async getSchemaRelations() {
 		var schema_relations = {}
-		var schemas = await web.cypher( 'MATCH (s:Schema)-[r]->(s2:Schema) return type(r) as type, r.label as label, r.label_rev as label_rev, COALESCE(r.label_inactive, r.label) as label_inactive, s._type as from, s2._type as to, r.tags as tags, r.compound as compound')
+		var schemas = await web.cypher( 'MATCH (s:Nodes)-[r]->(s2:Nodes) return type(r) as type, r.label as label, r.label_rev as label_rev, COALESCE(r.label_inactive, r.label) as label_inactive, s._type as from, s2._type as to, r.tags as tags, r.compound as compound')
 		schemas.result.forEach(x => {
 			schema_relations[`${x.from}:${x.type}:${x.to}`] = x
 		})
@@ -747,7 +706,20 @@ module.exports = class Graph {
 		if(search[0]) {
 			var arr = search[0].result.map(x => '"' + x + '"')
 			var query = `MATCH (n) WHERE id(n) in [${arr.join(',')}] AND NOT n:Schema return id(n) as id, n.label as label, labels(n) as type LIMIT 10`
-			return web.cypher( query)
+
+			var data = await web.cypher( query)
+			if(search[1]) {
+				arr = search[1].result.map(x => '"' + x + '"')
+				query = `MATCH (n) WHERE id(n) in [${arr.join(',')}] AND NOT n:Schema return id(n) as id, n.label as label, labels(n) as type LIMIT 10`
+			}
+			var data1 = await web.cypher( query)
+			data.result.concat(data1.result)
+			var out = {result: []}
+			out.result = data.result.concat(data1.result.filter(item2 =>
+				!data.result.some(item1 => item1.id === item2.id)
+			));
+
+			return out
 		} else {
 			return {result:[]}
 		}
@@ -812,13 +784,6 @@ module.exports = class Graph {
 	}
 
 
-	async myId(user) {
-		if(!user) throw('user not defined')
-		var query = `MATCH (me:Person {id:"${user}"}) return id(me) as rid, me._group as group, me._access as access`
-		var response = await web.cypher(query)
-		if(!response.result) throw('user not found!')
-		return response.result[0]
-	}
 
 
 	async getGroups() {
@@ -932,19 +897,10 @@ module.exports = class Graph {
 			const file_path = path.resolve('./graph', filename)
 			const data = await fsPromises.readFile(file_path, 'utf8')
 			const graph_data = yaml.load(data)
-			const admin = await this.hasAdminPermissions(auth_header)
+			const admin = await user.hasAdminPermissions(auth_header)
 
 			if(admin) {
-				if(mode == 'clear') {
-					await web.clearGraph()
-					await this.setSystemNodes()
-					await this.createSystemGraph()
-					await this.writeGraphToDB(graph_data, auth_header)
-				} else {
-					// otherwise we merge
-					await this.mergeGraphToDB(graph_data)
-				}
-	
+				await this.writeGraphToDB(graph_data, auth_header)
 				this.createIndex()
 			}
 
@@ -955,43 +911,35 @@ module.exports = class Graph {
 	}
 
 
-	async mergeGraphToDB(graph) {
-		try {
-			for(var node of graph.nodes) {
-				const type = Object.keys(node)[0]
-				await this.merge(type, node)
-			}
-			for(var edge of graph.edges) {
-				if(edge.Edge) await this.mergeConnect(edge.Edge)
-			}
-		} catch (e) {
-			throw(e)
-		}
-	}
-
-
 	async writeGraphToDB(graph, auth_header) {
 		try {
 			for(var node of graph.nodes) {
 				const type = Object.keys(node)[0]
-				await this.create(type, node[type], auth_header)
+				console.log(type)
+				await this.merge(type, node, auth_header)
 			}
 
 			for(var edge of graph.edges) {
+				
 				// edges object format
 				if(edge.Edge) {
-					await this.connect(edge.Edge.from, edge.Edge.relation, edge.Edge.to, true, edge.Edge.attributes, auth_header)
+					await this.mergeConnect(edge)
 				// edges string format
 				} else {
 					const edge_key = Object.keys(edge)[0]
 					const splitted = edge_key.split('->')
+					var data = {}
 					if(splitted.length == 3) {
-						const link = splitted[1].trim()
+						data.relation = splitted[1].trim()
 						const [from_type, ...from_rest]= splitted[0].split(':')
 						const [to_type, ...to_rest] = splitted[2].split(':')
-						const from_id = from_rest.join(':').trim()
-						const to_id = to_rest.join(':').trim()
-						await this.connect(from_id, link, to_id, true, edge[edge_key], auth_header)
+						data.from_type = from_type
+						data.to_type = to_type
+						data.from_id = from_rest.join(':').trim()
+						data.to_id = to_rest.join(':').trim()
+						if(edge[edge_key]['attr']) data.attr = edge[edge_key]['attr']
+						if(edge[edge_key]['attr']) console.log(data)
+						await this.mergeConnect(data)
 					} else {
 						throw('Graph edge error: ' + Object.keys(edge)[0])
 					}
@@ -1003,11 +951,14 @@ module.exports = class Graph {
 	}
 
 
-	async exportGraphYAML(filename) {
+	async exportGraphYAML(filename, auth_header) {
+		const admin = await user.hasAdminPermissions(auth_header)
+		if(!admin) throw('Permission denied')
 		if(!filename) throw('You need to give a file name! ')
+
 		var vertex_ids = {}
 		var edge_ids = {}
-		var query = 'MATCH (n) WHERE NOT n:Schema OPTIONAL MATCH (n)-[r]-() RETURN n, r '
+		var query = 'MATCH (n) WHERE NOT n:Nodes OPTIONAL MATCH (n)-[r]-() RETURN n, r '
 		var schemas = await web.cypher( query, {serializer: 'graph'})
 		var output = {nodes: [], edges: []}
 		for(var vertex of schemas.result.vertices) {
@@ -1055,14 +1006,13 @@ module.exports = class Graph {
 	}
 
 
-
 	async exportText() {
 		// list all data for RAG
 		var items = []
 		var output = []
 
 		// first all types
-		const type_query = "MATCH (s:Schema) WHERE NOT s._type IN ['UserGroup', 'Menu', 'Query', 'Tag'] return s._type AS type"
+		const type_query = "MATCH (s:Nodes) WHERE NOT s._type IN ['UserGroup', 'Menu', 'Query', 'Tag'] return s._type AS type"
 		var schemas = await web.cypher(type_query)
 
 		for(var schema of schemas.result) {
@@ -1111,7 +1061,7 @@ module.exports = class Graph {
 		var items = []
 
 		// first all types
-		const type_query = "MATCH (s:Schema) WHERE NOT s._type IN ['UserGroup', 'Menu', 'Query', 'Tag'] return s._type AS type"
+		const type_query = "MATCH (s:Nodes) WHERE NOT s._type IN ['UserGroup', 'Menu', 'Query', 'Tag'] return s._type AS type"
 		var schemas = await web.cypher(type_query)
 
 		for(var schema of schemas.result) {
@@ -1187,7 +1137,7 @@ module.exports = class Graph {
 			for(var rel of tagged_relations.result) {
 				rels.push(rel.rel)
 			}if(rels.length) {
-				graph = await web.getGraph(`MATCH  (s)-[r:${rels.join('|:')}]->(t) WHERE not s:Schema return s,r,t, t.label as l`)
+				graph = await web.getGraph(`MATCH  (s)-[r:${rels.join('|:')}]->(t) WHERE not s:Nodes return s,r,t, t.label as l`)
 			}
 		}
 		return graph
@@ -1200,7 +1150,7 @@ module.exports = class Graph {
 
 
 	async getStyles() {
-		var query = 'MATCH (s:Schema) return COALESCE(s._style,"") as style, s._type as type'
+		var query = 'MATCH (s:Nodes) return COALESCE(s._style,"") as style, s._type as type'
 		return await web.cypher( query)
 	}
 
